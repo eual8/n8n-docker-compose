@@ -1,0 +1,230 @@
+{
+  "name": "Text File to Elasticsearch Indexer - Working Version",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Получаем данные из входного массива\nconst inputData = items[0].json.data;\n\nif (!inputData) {\n  throw new Error('Отсутствует поле data во входных данных');\n}\n\nif (typeof inputData !== 'string') {\n  throw new Error('Поле data должно содержать строку');\n}\n\n// Разбиваем текст на абзацы\nlet paragraphs = inputData.split(/\\n\\s*\\n/);\n\n// Если двойных переносов нет, разбиваем по одинарным\nif (paragraphs.length === 1) {\n  paragraphs = inputData.split(/\\n/);\n}\n\n// Фильтруем пустые абзацы\nparagraphs = paragraphs.map(p => p.trim()).filter(p => p.length > 0);\n\nif (paragraphs.length === 0) {\n  throw new Error('Входные данные пустые');\n}\n\nconsole.log(`Обнаружено ${paragraphs.length} абзацев`);\n\n// Создаем документы для каждого абзаца\nconst timestamp = new Date().toISOString();\nconst sourceFile = 'api_input.txt'; // Поскольку данные приходят через API, а не из файла\n\nconst result = paragraphs.map((paragraph, index) => ({\n  json: {\n    id: `doc_${Date.now()}_${index.toString().padStart(4, '0')}`,\n    content: paragraph,\n    paragraph_number: index + 1,\n    total_paragraphs: paragraphs.length,\n    timestamp: timestamp,\n    source_file: sourceFile,\n    word_count: paragraph.split(/\\s+/).filter(w => w.length > 0).length,\n    char_count: paragraph.length\n  }\n}));\n\nreturn result;"
+      },
+      "id": "split-paragraphs",
+      "name": "Split into Paragraphs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "split-in-batches",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        512,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=http://elasticsearch:9200/documents/_doc/={{ $json.id }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "elasticsearch-index",
+      "name": "Index to Elasticsearch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        784,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const indexedDocs = items.length;\nconst totalWords = items.reduce((sum, item) => sum + (item.json.word_count || 0), 0);\nconst fileName = items[0]?.json?.source_file || 'unknown';\n\nconsole.log(`Успешно заиндексировано ${indexedDocs} документов из файла: ${fileName}`);\nconsole.log(`Общее количество слов: ${totalWords}`);\n\nreturn [{\n  json: {\n    status: 'success',\n    indexed_documents: indexedDocs,\n    total_words: totalWords,\n    source_file: fileName,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "log-success",
+      "name": "Log Success",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        992,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "formTitle": "Fileupload",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "data",
+              "fieldType": "file",
+              "acceptFileTypes": ".txt",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -80,
+        208
+      ],
+      "id": "3a8b0e1e-8454-44b3-ac17-e579356f933e",
+      "name": "On form submission",
+      "webhookId": "65c48e88-ed52-4c6e-8c9f-3a4d798d113f"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        144,
+        208
+      ],
+      "id": "6da4feb9-7d0b-41ae-9d0c-8b6cfda28d22",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "indexId": "documents",
+        "returnAll": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.elasticsearch",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        512
+      ],
+      "id": "08673eef-252e-48c7-a83d-15878dfcafdb",
+      "name": "Get many documents",
+      "credentials": {
+        "elasticsearchApi": {
+          "id": "ja1tc17TEjeLwm7K",
+          "name": "Elasticsearch account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "index",
+        "operation": "delete",
+        "indexId": "documents"
+      },
+      "type": "n8n-nodes-base.elasticsearch",
+      "typeVersion": 1,
+      "position": [
+        0,
+        512
+      ],
+      "id": "b613e87d-759b-47e1-88f3-d83eccada796",
+      "name": "Delete an index",
+      "credentials": {
+        "elasticsearchApi": {
+          "id": "ja1tc17TEjeLwm7K",
+          "name": "Elasticsearch account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Split into Paragraphs": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "Log Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Index to Elasticsearch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Index to Elasticsearch": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Split into Paragraphs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many documents": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true
+  },
+  "versionId": "40ca7742-0dbb-4e20-8abe-fe2c245efe54",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "73786a5cd1090f274a664d4f2d8ca5403e1875652b63571358d70367452e0139"
+  },
+  "id": "IdZHAefa7kcbXgSF22",
+  "tags": []
+}
