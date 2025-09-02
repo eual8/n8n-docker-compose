@@ -39,28 +39,6 @@ Response:
 }
 ```
 
-### Calculate Similarity
-```
-POST /similarity
-```
-
-Request body:
-```json
-{
-  "text1": "Hello world",
-  "text2": "Привет мир"
-}
-```
-
-Response:
-```json
-{
-  "text1": "Hello world",
-  "text2": "Привет мир",
-  "similarity": 0.892
-}
-```
-
 ## Usage Examples
 
 ### Python
@@ -71,11 +49,6 @@ import requests
 response = requests.post('http://localhost:8080/embeddings', 
     json={"texts": ["Hello world", "Test text"]})
 embeddings = response.json()['embeddings']
-
-# Calculate similarity
-response = requests.post('http://localhost:8080/similarity',
-    json={"text1": "Hello", "text2": "Hi"})
-similarity = response.json()['similarity']
 ```
 
 ### cURL
@@ -84,11 +57,6 @@ similarity = response.json()['similarity']
 curl -X POST http://localhost:8080/embeddings \
   -H "Content-Type: application/json" \
   -d '{"texts": ["Hello world"]}'
-
-# Calculate similarity
-curl -X POST http://localhost:8080/similarity \
-  -H "Content-Type: application/json" \
-  -d '{"text1": "Hello", "text2": "Hi"}'
 ```
 
 ## API Documentation

@@ -140,34 +140,6 @@ async def get_embeddings(request: EmbeddingRequest):
         logger.error(f"Error generating embeddings: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/similarity")
-async def calculate_similarity(text1: str = Field(..., description="First text"),
-                              text2: str = Field(..., description="Second text")):
-    """
-    Calculate cosine similarity between two texts.
-    
-    Returns a similarity score between -1 and 1.
-    """
-    if model is None:
-        raise HTTPException(status_code=503, detail="Model not loaded")
-    
-    try:
-        # Generate embeddings
-        embeddings = model.encode([text1, text2], normalize_embeddings=True)
-        
-        # Calculate cosine similarity
-        similarity = float(np.dot(embeddings[0], embeddings[1]))
-        
-        return {
-            "text1": text1,
-            "text2": text2,
-            "similarity": similarity
-        }
-    
-    except Exception as e:
-        logger.error(f"Error calculating similarity: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8080)
