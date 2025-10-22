@@ -20,6 +20,20 @@ services:
     volumes:
       - ollama_data:/root/.ollama
 
+  ytdlp:
+    build:
+      context: ./docker/ytdlp
+      dockerfile: Dockerfile
+    container_name: ytdlp
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ytdlp_downloads:/downloads
+      - ytdlp_cache:/root/.cache
+
   labse:
     build:
       context: ./docker/labse
@@ -50,6 +64,7 @@ services:
       - EXECUTIONS_DATA_PRUNE=true
     volumes:
       - n8n_data:/home/node/.n8n
+      - ytdlp_downloads:/downloads:ro
     depends_on:
       - elasticsearch
       - ollama
@@ -59,3 +74,5 @@ volumes:
   n8n_data:
   ollama_data:
   labse_cache:
+  ytdlp_downloads:
+  ytdlp_cache:

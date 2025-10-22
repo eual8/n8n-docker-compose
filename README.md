@@ -10,6 +10,7 @@ This repository provides a ready-to-use Docker Compose stack that includes:
 - **Elasticsearch** - Search and analytics engine for document indexing
 - **Ollama** - Local LLM inference server for AI capabilities
 - **LaBSE** - Multilingual text embeddings service (109 languages supported)
+- **YT-DLP** - YouTube and video platform downloader with REST API
 
 ## 🎯 Why use this stack?
 
@@ -29,6 +30,7 @@ This setup is perfect for:
 | **Elasticsearch** | 9200 | Document search and analytics | http://localhost:9200 |
 | **Ollama** | 11434 | Local LLM inference server | http://localhost:11434 |
 | **LaBSE** | 8080 | Multilingual embeddings API | http://localhost:8080 |
+| **YT-DLP** | 8081 | YouTube video/audio downloader | http://localhost:8081 |
 
 ## 🛠 Quick Start
 
@@ -99,6 +101,12 @@ The included workflow demonstrates the stack's capabilities:
 - 768-dimensional embeddings
 - Batch processing capable
 
+### YT-DLP Service
+- Download videos from YouTube and 1000+ sites
+- Extract audio in MP3 format
+- Get video metadata and transcripts
+- REST API for easy integration
+
 ## 📚 Usage Examples
 
 ### Generate Embeddings
@@ -118,9 +126,24 @@ curl -X GET "http://localhost:9200/documents/_search?q=your_search_term"
 docker exec -it ollama ollama pull llama2
 ```
 
+### Download YouTube Video
+```bash
+curl -X POST http://localhost:8081/download \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://www.youtube.com/watch?v=VIDEO_ID", "format": "video", "quality": "best"}'
+```
+
+### Download YouTube Audio (MP3)
+```bash
+curl -X POST http://localhost:8081/download \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://www.youtube.com/watch?v=VIDEO_ID", "format": "audio"}'
+```
+
 ## 🔍 API Documentation
 
 - **LaBSE API**: http://localhost:8080/docs
+- **YT-DLP API**: See `docker/ytdlp/README.md` for full API documentation
 - **Elasticsearch**: http://localhost:9200
 - **n8n Webhooks**: Available through workflow triggers
 
@@ -131,6 +154,8 @@ All data is persisted in Docker volumes:
 - `esdata` - Elasticsearch indices
 - `ollama_data` - Downloaded LLM models  
 - `labse_cache` - Cached embedding models
+- `ytdlp_downloads` - Downloaded videos and audio files
+- `ytdlp_cache` - yt-dlp cache
 
 ## 🚀 Advanced Usage
 
