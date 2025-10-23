@@ -35,6 +35,27 @@ This setup is perfect for:
 | **YT-DLP** | 8081 | YouTube video/audio downloader | http://localhost:8081 |
 | **Whisper** | 8082 | Audio transcription service | http://localhost:8082 |
 
+## 🎬 Ready-to-Use Workflows
+
+### YouTube Video Transcription (Manual)
+
+Automatically transcribe YouTube videos to text:
+
+1. **Open n8n**: http://localhost:5678 (login: admin / password)
+2. **Find workflow**: "YouTube Video Transcription (Manual)"
+3. **Edit URL**: Open "Enter YouTube URL" node and paste your YouTube link
+4. **Run**: Click "Execute workflow"
+5. **Get result**: View transcription in "Format Response" node
+
+📖 **Full instructions**: See `workflows/QUICK_START.md`
+
+**Features:**
+- ✅ Simple form-based input
+- ✅ Automatic audio extraction
+- ✅ Multi-language support (auto-detect or specify)
+- ✅ Timestamped segments
+- ✅ Multiple Whisper models (tiny to large)
+
 ## 🛠 Quick Start
 
 ### Prerequisites

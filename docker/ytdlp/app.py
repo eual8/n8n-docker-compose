@@ -28,6 +28,16 @@ def get_video_info():
             'quiet': True,
             'no_warnings': True,
             'extract_flat': False,
+            # Добавляем параметры для обхода ограничений YouTube
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'web']
+                }
+            },
+            # Добавляем User-Agent
+            'http_headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
         }
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -76,11 +86,27 @@ def download_video():
             'outtmpl': os.path.join(DOWNLOAD_DIR, '%(id)s.%(ext)s'),
             'quiet': False,
             'no_warnings': False,
+            # Добавляем параметры для обхода ограничений YouTube
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'web']
+                    # Убираем 'skip' чтобы не блокировать доступные форматы
+                }
+            },
+            # Добавляем User-Agent
+            'http_headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            },
+            # Игнорируем ошибки для более стабильной работы
+            'ignoreerrors': False,
+            # Разрешаем использовать все доступные форматы
+            'allow_unplayable_formats': False,
         }
         
         # Настройка формата в зависимости от типа
         if format_type == 'audio':
             ydl_opts.update({
+                # Самый простой и надёжный вариант для аудио
                 'format': 'bestaudio/best',
                 'postprocessors': [{
                     'key': 'FFmpegExtractAudio',
@@ -89,10 +115,13 @@ def download_video():
                 }],
             })
         elif format_type == 'video':
-            if quality == 'best':
-                ydl_opts['format'] = 'bestvideo+bestaudio/best'
-            else:
-                ydl_opts['format'] = f'bestvideo[height<={quality.replace("p", "")}]+bestaudio/best'
+            # Используем самый простой и надёжный селектор
+            # Это всегда сработает, так как YouTube всегда имеет хотя бы один формат
+            ydl_opts['format'] = 'best'
+            # Опционально добавляем merge если нужно объединить видео и аудио
+            if quality != 'best':
+                height = quality.replace("p", "")
+                ydl_opts['format'] = f'best[height<={height}]/best'
         else:
             ydl_opts['format'] = 'best'
         

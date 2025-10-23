@@ -1,0 +1,215 @@
+{
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual_trigger",
+      "name": "When clicking 'Test workflow'",
+      "position": [
+        240,
+        304
+      ],
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "youtube_url",
+              "name": "url",
+              "type": "string",
+              "value": "https://www.youtube.com/watch?v=Xjlalqbp8dU"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get_youtube_url",
+      "name": "Enter YouTube URL",
+      "position": [
+        464,
+        304
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ytdlp:8081/download",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $json.url }}"
+            },
+            {
+              "name": "format",
+              "value": "audio"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "download_audio",
+      "name": "Download Audio from YouTube",
+      "position": [
+        688,
+        304
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "filePath": "={{ $json.path }}"
+      },
+      "id": "read_audio_file",
+      "name": "Read Audio File",
+      "position": [
+        912,
+        304
+      ],
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://whisper:8082/transcribe",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "model",
+              "value": "base"
+            },
+            {
+              "name": "language",
+              "value": "ru"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "transcribe_audio",
+      "name": "Transcribe with Whisper",
+      "position": [
+        1120,
+        304
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "text_field",
+              "name": "transcription",
+              "type": "string",
+              "value": "={{ $json.text }}"
+            },
+            {
+              "id": "language_field",
+              "name": "language",
+              "type": "string",
+              "value": "={{ $json.language }}"
+            },
+            {
+              "id": "duration_field",
+              "name": "duration",
+              "type": "number",
+              "value": "={{ $json.duration }}"
+            },
+            {
+              "id": "video_title",
+              "name": "video_title",
+              "type": "string",
+              "value": "={{ $('Download Audio from YouTube').item.json.title }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "format_response",
+      "name": "Format Response",
+      "position": [
+        1344,
+        304
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    }
+  ],
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Enter YouTube URL",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Enter YouTube URL": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Download Audio from YouTube",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Download Audio from YouTube": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Read Audio File",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Read Audio File": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Transcribe with Whisper",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Transcribe with Whisper": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Response",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "73786a5cd1090f274a664d4f2d8ca5403e1875652b63571358d70367452e0139"
+  }
+}
