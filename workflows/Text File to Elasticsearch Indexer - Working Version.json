@@ -5,7 +5,7 @@
       "id": "manual_trigger",
       "name": "When clicking 'Test workflow'",
       "position": [
-        240,
+        208,
         304
       ],
       "type": "n8n-nodes-base.manualTrigger",
@@ -19,7 +19,7 @@
               "id": "youtube_url",
               "name": "url",
               "type": "string",
-              "value": "https://www.youtube.com/watch?v=c7pCJBfg5qo"
+              "value": "https://www.youtube.com/watch?v=Xjlalqbp8dU"
             }
           ]
         },
@@ -28,7 +28,7 @@
       "id": "get_youtube_url",
       "name": "Enter YouTube URL",
       "position": [
-        464,
+        432,
         304
       ],
       "type": "n8n-nodes-base.set",
@@ -56,7 +56,7 @@
       "id": "download_audio",
       "name": "Download Audio from YouTube",
       "position": [
-        672,
+        640,
         304
       ],
       "type": "n8n-nodes-base.httpRequest",
@@ -69,7 +69,7 @@
       "id": "read_audio_file",
       "name": "Read Audio File",
       "position": [
-        912,
+        880,
         304
       ],
       "type": "n8n-nodes-base.readBinaryFile",
@@ -90,11 +90,7 @@
             },
             {
               "name": "model",
-              "value": "base"
-            },
-            {
-              "name": "language",
-              "value": "ru"
+              "value": "medium"
             }
           ]
         },
@@ -103,7 +99,7 @@
       "id": "transcribe_audio",
       "name": "Transcribe with Whisper",
       "position": [
-        1120,
+        1088,
         304
       ],
       "type": "n8n-nodes-base.httpRequest",
@@ -144,7 +140,7 @@
       "id": "format_response",
       "name": "Format Response",
       "position": [
-        1344,
+        1312,
         304
       ],
       "type": "n8n-nodes-base.set",
