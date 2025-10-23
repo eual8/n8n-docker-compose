@@ -5,7 +5,7 @@
       "id": "manual_trigger",
       "name": "When clicking 'Test workflow'",
       "position": [
-        240,
+        208,
         304
       ],
       "type": "n8n-nodes-base.manualTrigger",
@@ -28,7 +28,7 @@
       "id": "get_youtube_url",
       "name": "Enter YouTube URL",
       "position": [
-        464,
+        432,
         304
       ],
       "type": "n8n-nodes-base.set",
@@ -51,12 +51,14 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "timeout": 7200000
+        }
       },
       "id": "download_audio",
       "name": "Download Audio from YouTube",
       "position": [
-        688,
+        640,
         304
       ],
       "type": "n8n-nodes-base.httpRequest",
@@ -69,7 +71,7 @@
       "id": "read_audio_file",
       "name": "Read Audio File",
       "position": [
-        912,
+        880,
         304
       ],
       "type": "n8n-nodes-base.readBinaryFile",
@@ -90,20 +92,18 @@
             },
             {
               "name": "model",
-              "value": "base"
-            },
-            {
-              "name": "language",
-              "value": "ru"
+              "value": "medium"
             }
           ]
         },
-        "options": {}
+        "options": {
+          "timeout": 7200000
+        }
       },
       "id": "transcribe_audio",
       "name": "Transcribe with Whisper",
       "position": [
-        1120,
+        1088,
         304
       ],
       "type": "n8n-nodes-base.httpRequest",
@@ -144,7 +144,7 @@
       "id": "format_response",
       "name": "Format Response",
       "position": [
-        1344,
+        1312,
         304
       ],
       "type": "n8n-nodes-base.set",
