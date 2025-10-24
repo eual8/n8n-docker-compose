@@ -25,13 +25,14 @@ os.makedirs(MODELS_DIR, exist_ok=True)
 # Путь к бинарнику whisper.cpp
 WHISPER_CPP_BIN = '/whisper.cpp/build/bin/whisper-cli'
 
-# Маппинг названий моделей на файлы
+# Маппинг названий моделей на файлы и параметры для скрипта скачивания
 MODEL_FILES = {
-    'tiny': 'ggml-tiny.bin',
-    'base': 'ggml-base.bin',
-    'small': 'ggml-small.bin',
-    'medium': 'ggml-medium.bin',
-    'large': 'ggml-large-v3.bin'
+    'tiny': {'file': 'ggml-tiny.bin', 'download_name': 'tiny'},
+    'base': {'file': 'ggml-base.bin', 'download_name': 'base'},
+    'small': {'file': 'ggml-small.bin', 'download_name': 'small'},
+    'medium': {'file': 'ggml-medium.bin', 'download_name': 'medium'},
+    'large': {'file': 'ggml-large-v3.bin', 'download_name': 'large-v3'},
+    'large-v3': {'file': 'ggml-large-v3.bin', 'download_name': 'large-v3'}
 }
 
 # Поддерживаемые расширения файлов
@@ -43,32 +44,46 @@ def allowed_file(filename):
 
 def download_model(model_name):
     """Скачивание модели если она еще не скачана"""
-    model_file = MODEL_FILES.get(model_name)
-    if not model_file:
+    model_info = MODEL_FILES.get(model_name)
+    if not model_info:
         raise ValueError(f"Неизвестная модель: {model_name}")
+    
+    model_file = model_info['file']
+    download_name = model_info['download_name']
     
     model_path = os.path.join(MODELS_DIR, model_file)
     
     # Проверяем наличие модели в целевой директории
     if os.path.exists(model_path):
-        logger.info(f"Модель {model_name} уже существует: {model_path}")
-        return model_path
+        file_size = os.path.getsize(model_path)
+        # Проверяем, что файл не пустой (больше 1MB)
+        if file_size > 1024 * 1024:
+            logger.info(f"Модель {model_name} уже существует: {model_path} ({file_size / (1024**2):.1f} MB)")
+            return model_path
+        else:
+            logger.warning(f"Найден битый файл модели (размер: {file_size} байт), удаляем...")
+            os.unlink(model_path)
     
     # Проверяем, может модель уже есть в whisper.cpp/models
     whisper_models_dir = '/whisper.cpp/models'
     alt_path = os.path.join(whisper_models_dir, model_file)
     
     if os.path.exists(alt_path):
-        logger.info(f"Модель найдена в {alt_path}, перемещаем в {model_path}")
-        subprocess.run(['mv', alt_path, model_path], check=True)
-        logger.info(f"Модель {model_name} успешно перемещена: {model_path}")
-        return model_path
+        file_size = os.path.getsize(alt_path)
+        if file_size > 1024 * 1024:
+            logger.info(f"Модель найдена в {alt_path} ({file_size / (1024**2):.1f} MB), копируем в {model_path}")
+            subprocess.run(['cp', alt_path, model_path], check=True)
+            logger.info(f"Модель {model_name} успешно скопирована: {model_path}")
+            return model_path
+        else:
+            logger.warning(f"Найден битый файл модели в {alt_path} (размер: {file_size} байт), удаляем...")
+            os.unlink(alt_path)
     
-    logger.info(f"Скачивание модели {model_name}...")
+    logger.info(f"Скачивание модели {model_name} ({download_name})...")
     
     # Скрипт скачивания находится в /whisper.cpp/models/
     # По умолчанию он сохраняет модель в свою директорию (/whisper.cpp/models/)
-    download_script = f"bash /whisper.cpp/models/download-ggml-model.sh {model_name}"
+    download_script = f"bash /whisper.cpp/models/download-ggml-model.sh {download_name}"
     
     try:
         # Запускаем скрипт из директории /whisper.cpp/models
@@ -82,20 +97,32 @@ def download_model(model_name):
         
         if result.returncode != 0:
             logger.error(f"Ошибка скачивания модели: {result.stderr}")
+            logger.error(f"Вывод скрипта: {result.stdout}")
             raise Exception(f"Не удалось скачать модель: {result.stderr}")
+        
+        logger.info(f"Скрипт выполнен успешно")
         
         # После скачивания файл должен быть в /whisper.cpp/models/
         if os.path.exists(alt_path):
-            logger.info(f"Модель скачана в {alt_path}, перемещаем в {model_path}")
-            subprocess.run(['mv', alt_path, model_path], check=True)
-        elif not os.path.exists(model_path):
-            # Пытаемся найти файл
-            logger.error(f"Модель не найдена после скачивания")
-            raise Exception(f"Модель не найдена ни в {model_path}, ни в {alt_path}")
+            file_size = os.path.getsize(alt_path)
+            if file_size > 1024 * 1024:
+                logger.info(f"Модель скачана в {alt_path} ({file_size / (1024**2):.1f} MB), копируем в {model_path}")
+                subprocess.run(['cp', alt_path, model_path], check=True)
+            else:
+                raise Exception(f"Скачанный файл модели слишком мал: {file_size} байт")
+        else:
+            raise Exception(f"Модель не найдена после скачивания: {alt_path}")
         
-        logger.info(f"Модель {model_name} успешно скачана: {model_path}")
+        # Финальная проверка
+        if not os.path.exists(model_path):
+            raise Exception(f"Модель не найдена в {model_path} после всех операций")
+        
+        logger.info(f"Модель {model_name} успешно установлена: {model_path}")
         return model_path
         
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Ошибка выполнения команды скачивания: {str(e)}")
+        raise
     except Exception as e:
         logger.error(f"Ошибка при скачивании модели: {str(e)}")
         raise
@@ -116,9 +143,11 @@ def convert_to_wav(input_file):
     ]
     
     try:
+        logger.info(f"Конвертация файла в WAV 16kHz: {input_file} -> {output_file}")
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
             raise Exception(f"Ошибка конвертации: {result.stderr}")
+        logger.info(f"Конвертация завершена: {output_file}")
         return output_file
     except Exception as e:
         logger.error(f"Ошибка при конвертации файла: {str(e)}")
@@ -139,6 +168,8 @@ def run_whisper_cpp(audio_file, model_name='base', language=None, task='transcri
             '-f', wav_file,
             '-oj',  # Вывод в JSON
             '-otxt',  # Вывод в текст
+            '-t', '8',  # Количество потоков (можно увеличить)
+            '-p', '1',  # Количество процессоров
         ]
         
         # Добавление языка если указан
@@ -149,12 +180,28 @@ def run_whisper_cpp(audio_file, model_name='base', language=None, task='transcri
         if task == 'translate':
             cmd.append('-tr')
         
-        # Запуск whisper.cpp
+        # Запуск whisper.cpp с потоковым выводом
         logger.info(f"Запуск whisper.cpp: {' '.join(cmd)}")
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=TEMP_DIR)
+        process = subprocess.Popen(
+            cmd, 
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,  # Построчная буферизация
+            cwd=TEMP_DIR
+        )
         
-        if result.returncode != 0:
-            raise Exception(f"Ошибка whisper.cpp: {result.stderr}")
+        # Чтение вывода в реальном времени
+        for line in process.stdout:
+            line = line.strip()
+            if line:
+                logger.info(f"whisper.cpp: {line}")
+        
+        # Ожидание завершения процесса
+        return_code = process.wait()
+        
+        if return_code != 0:
+            raise Exception(f"Ошибка whisper.cpp: процесс завершился с кодом {return_code}")
         
         # Чтение результатов
         json_file = wav_file.rsplit('.', 1)[0] + '.json'
@@ -324,6 +371,11 @@ def list_models():
             },
             {
                 'name': 'large',
+                'size': '~2.9 GB',
+                'description': 'Самая большая и точная модель (large-v3)'
+            },
+            {
+                'name': 'large-v3',
                 'size': '~2.9 GB',
                 'description': 'Самая большая и точная модель'
             }
