@@ -1,0 +1,280 @@
+{
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "6857768f-bd37-4746-b1d5-f5f08689cb7b",
+      "name": "When clicking 'Test workflow'",
+      "position": [
+        0,
+        0
+      ],
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "youtube_url",
+              "name": "url",
+              "type": "string",
+              "value": "https://www.youtube.com/watch?v=UHHN-mYYQ1g"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "10089da1-229e-403e-8299-9f395cc0e6b2",
+      "name": "Enter YouTube URL",
+      "position": [
+        224,
+        0
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ytdlp:8081/download",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $json.url }}"
+            },
+            {
+              "name": "format",
+              "value": "audio"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 7200000
+        }
+      },
+      "id": "704930c5-759f-424c-aeb9-529f301831e1",
+      "name": "Download Audio from YouTube",
+      "position": [
+        432,
+        0
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "filePath": "={{ $json.path }}"
+      },
+      "id": "0eb0133c-a6fa-4d74-bcda-0412099ce007",
+      "name": "Read Audio File",
+      "position": [
+        640,
+        0
+      ],
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "text_field",
+              "name": "transcription",
+              "type": "string",
+              "value": "={{ $json.text }}"
+            },
+            {
+              "id": "language_field",
+              "name": "language",
+              "type": "string",
+              "value": "={{ $json.language }}"
+            },
+            {
+              "id": "duration_field",
+              "name": "duration",
+              "type": "number",
+              "value": "={{ $json.duration }}"
+            },
+            {
+              "id": "video_title",
+              "name": "video_title",
+              "type": "string",
+              "value": "={{ $('Download Audio from YouTube').item.json.title }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "15450440-54d0-4017-b2b1-6fb2c5317a27",
+      "name": "Format Response",
+      "position": [
+        1056,
+        0
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/audio/transcriptions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "model",
+              "value": "gpt-4o-mini-transcribe"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        848,
+        0
+      ],
+      "id": "2066b675-0025-46d7-ba79-52d55361b1f2",
+      "name": "HTTP Request",
+      "credentials": {
+        "openAiApi": {
+          "id": "LVvCTSUwCLIjsCtc",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $binary.data.fileName }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1424,
+        0
+      ],
+      "id": "3e1239d1-a3bf-4aae-8d48-aba1c8f1079f",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "=transcription",
+        "options": {
+          "fileName": "={{ $json.video_title }}.txt"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1232,
+        0
+      ],
+      "id": "b6eb9a4c-ac2b-4ca2-9438-05f58bc3bb55",
+      "name": "Convert to File"
+    }
+  ],
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "node": "Enter YouTube URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enter YouTube URL": {
+      "main": [
+        [
+          {
+            "node": "Download Audio from YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Audio from YouTube": {
+      "main": [
+        [
+          {
+            "node": "Read Audio File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Audio File": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        []
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "6e867bcf7d2244f6d6fb1d7e5899bdf497425186003917c528ca20ded04de77c"
+  }
+}
