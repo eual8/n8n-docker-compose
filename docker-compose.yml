@@ -61,20 +61,6 @@ services:
       - whisper_cache:/root/.cache
       - whisper_models:/root/.cache/whisper
 
-  whisper-cpp:
-    build:
-      context: ./docker/whisper-cpp
-      dockerfile: Dockerfile
-    container_name: whisper-cpp
-    restart: unless-stopped
-    ports:
-      - "8083:8083"
-    environment:
-      - PYTHONUNBUFFERED=1
-    volumes:
-      - whisper_cpp_models:/models
-      - whisper_cpp_cache:/tmp/whisper
-
   n8n:
     image: n8nio/n8n:latest
     container_name: n8n
@@ -106,5 +92,3 @@ volumes:
   ytdlp_cache:
   whisper_cache:
   whisper_models:
-  whisper_cpp_models:
-  whisper_cpp_cache:
