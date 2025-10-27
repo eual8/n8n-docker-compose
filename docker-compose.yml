@@ -62,7 +62,9 @@ services:
       - whisper_models:/root/.cache/whisper
 
   n8n:
-    image: n8nio/n8n:latest
+    build:
+      context: ./docker/n8n
+      dockerfile: Dockerfile
     container_name: n8n
     restart: unless-stopped
     ports:
@@ -75,7 +77,9 @@ services:
       - NODE_ENV=production
       - EXECUTIONS_DATA_PRUNE=true
       - NODE_FUNCTION_ALLOW_BUILTIN=fs,path,crypto
+      - NODE_FUNCTION_ALLOW_EXTERNAL=openai
       - DB_SQLITE_POOL_SIZE=3
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
     volumes:
       - n8n_data:/home/node/.n8n
       - ytdlp_downloads:/downloads:ro
