@@ -1,0 +1,250 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "youtube_url",
+              "name": "url",
+              "type": "string",
+              "value": "https://www.youtube.com/watch?v=UHHN-mYYQ1g"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c63c009f-3c3b-4583-81f3-b27fe60bb6c9",
+      "name": "Enter YouTube URL",
+      "position": [
+        64,
+        144
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ytdlp:8081/download",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $json.url }}"
+            },
+            {
+              "name": "format",
+              "value": "audio"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 7200000
+        }
+      },
+      "id": "88516d8a-049d-43fd-b83c-48000928b442",
+      "name": "Download Audio from YouTube",
+      "position": [
+        272,
+        144
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "filePath": "={{ $json.path }}"
+      },
+      "id": "7d767489-8d93-44e1-acd6-16b526d9675f",
+      "name": "Read Audio File",
+      "position": [
+        480,
+        144
+      ],
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "jsCode": "// Импортируем необходимые модули\nconst fs = require('fs');\nconst OpenAI = require('openai');\n\n// Получаем API ключ из credentials\nconst credentials = await this.getCredentials('openAiApi');\nconst apiKey = credentials.apiKey;\n\n// Создаем клиент OpenAI\nconst openai = new OpenAI({\n  apiKey: apiKey\n});\n\n// Получаем бинарные данные аудио файла\nconst binaryData = items[0].binary.data;\n\nif (!binaryData) {\n  throw new Error('Нет бинарных данных аудио файла');\n}\n\n// Получаем буффер и сохраняем во временный файл\nconst audioBuffer = await this.helpers.getBinaryDataBuffer(0, 'data');\nconst tempFilePath = `/tmp/audio_${Date.now()}.mp3`;\nfs.writeFileSync(tempFilePath, audioBuffer);\n\ntry {\n  // Создаем стрим для транскрибации с использованием OpenAI SDK\n  const stream = await openai.audio.transcriptions.create({\n    file: fs.createReadStream(tempFilePath),\n    model: 'gpt-4o-mini-transcribe',\n    response_format: 'text',\n    stream: true,\n  });\n\n  // Собираем весь текст из стрима\n  let fullTranscription = '';\n  \n  for await (const event of stream) {\n    console.log('Получен фрагмент транскрибации:', event);\n    fullTranscription += event;\n  }\n\n  // Удаляем временный файл\n  fs.unlinkSync(tempFilePath);\n\n  // Возвращаем результат\n  return [\n    {\n      json: {\n        text: fullTranscription,\n        language: 'auto-detected',\n        duration: 0 // При стриминге duration не возвращается\n      }\n    }\n  ];\n  \n} catch (error) {\n  // Удаляем временный файл в случае ошибки\n  if (fs.existsSync(tempFilePath)) {\n    fs.unlinkSync(tempFilePath);\n  }\n  throw error;\n}"
+      },
+      "id": "50fd7277-b7b9-46f5-b4b5-e9d2f2cec9b5",
+      "name": "Stream Audio Transcription",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "text_field",
+              "name": "transcription",
+              "type": "string",
+              "value": "={{ $json.text }}"
+            },
+            {
+              "id": "language_field",
+              "name": "language",
+              "type": "string",
+              "value": "={{ $json.language }}"
+            },
+            {
+              "id": "duration_field",
+              "name": "duration",
+              "type": "number",
+              "value": "={{ $json.duration }}"
+            },
+            {
+              "id": "video_title",
+              "name": "video_title",
+              "type": "string",
+              "value": "={{ $('Download Audio from YouTube').item.json.title }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6e443f1e-465c-425c-8781-5c873c8ba09b",
+      "name": "Format Response",
+      "position": [
+        896,
+        144
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "=transcription",
+        "options": {
+          "fileName": "={{ $json.video_title }}.txt"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1072,
+        144
+      ],
+      "id": "caa47133-3290-43ed-bede-5678a6224d37",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $binary.data.fileName }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        144
+      ],
+      "id": "8d54856d-f0a2-41aa-b23f-ebfd52a2aac5",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        144
+      ],
+      "id": "ffc5aab7-ec29-4015-baa6-8c6ff6a0a6e8",
+      "name": "When clicking ‘Execute workflow’"
+    }
+  ],
+  "connections": {
+    "Enter YouTube URL": {
+      "main": [
+        [
+          {
+            "node": "Download Audio from YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Audio from YouTube": {
+      "main": [
+        [
+          {
+            "node": "Read Audio File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Audio File": {
+      "main": [
+        [
+          {
+            "node": "Stream Audio Transcription",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stream Audio Transcription": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Enter YouTube URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "206adf6655ba61d819856ed7ca9125a8e9b0a533b7fbb1ed0b047dc4ade2df87"
+  }
+}

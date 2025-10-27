@@ -68,14 +68,14 @@ services:
     ports:
       - "5678:5678"
     environment:
-      - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=admin
-      - N8N_BASIC_AUTH_PASSWORD=password
       - N8N_HOST=localhost
       - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
       - NODE_ENV=production
-      - EXECUTIONS_PROCESS=main
       - EXECUTIONS_DATA_PRUNE=true
+      - NODE_FUNCTION_ALLOW_BUILTIN=fs,path,crypto
+      - DB_SQLITE_POOL_SIZE=3
     volumes:
       - n8n_data:/home/node/.n8n
       - ytdlp_downloads:/downloads:ro
