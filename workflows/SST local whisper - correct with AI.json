@@ -1,0 +1,345 @@
+{
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "7d0f233e-bc3d-4656-9dbf-132fe2146896",
+      "name": "When clicking 'Test workflow'",
+      "position": [
+        -160,
+        32
+      ],
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "youtube_url",
+              "name": "url",
+              "type": "string",
+              "value": "https://www.youtube.com/watch?v=UHHN-mYYQ1g"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e5d3ce83-26b1-46be-aa28-f7ed6ad2e8f5",
+      "name": "Enter YouTube URL",
+      "position": [
+        64,
+        32
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ytdlp:8081/download",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $json.url }}"
+            },
+            {
+              "name": "format",
+              "value": "audio"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 7200000
+        }
+      },
+      "id": "035b7f74-1e4c-4b61-a1e8-11d8c6d3259b",
+      "name": "Download Audio from YouTube",
+      "position": [
+        288,
+        32
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "filePath": "={{ $json.path }}"
+      },
+      "id": "e12f6d94-0152-484c-ab50-fc45c09ae5bc",
+      "name": "Read Audio File",
+      "position": [
+        512,
+        32
+      ],
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://whisper:8082/transcribe",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "model",
+              "value": "large"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 7200000
+        }
+      },
+      "id": "8c230d4f-beee-4bc0-96ec-f6cdd4c62140",
+      "name": "Transcribe with Whisper",
+      "position": [
+        736,
+        32
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "text_field",
+              "name": "transcription",
+              "type": "string",
+              "value": "={{ $json.text }}"
+            },
+            {
+              "id": "language_field",
+              "name": "language",
+              "type": "string",
+              "value": "={{ $json.language }}"
+            },
+            {
+              "id": "duration_field",
+              "name": "duration",
+              "type": "number",
+              "value": "={{ $json.duration }}"
+            },
+            {
+              "id": "video_title",
+              "name": "video_title",
+              "type": "string",
+              "value": "={{ $('Download Audio from YouTube').item.json.title.replace(/[^a-zA-Zа-яА-ЯёЁ0-9\\s_-]/g, \"\").replace(/\\s+/g, \"_\").trim() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c630c0f6-9907-47c7-a733-a539c5f31cd5",
+      "name": "Format Response1",
+      "position": [
+        960,
+        32
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "=transcription",
+        "options": {
+          "fileName": "={{ $json.video_title }}.txt"
+        }
+      },
+      "id": "cfc31104-fa0a-4950-84ca-2ba748215c9b",
+      "name": "Convert to File",
+      "position": [
+        1536,
+        -64
+      ],
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $binary.data.fileName }}",
+        "options": {}
+      },
+      "id": "cef46380-5356-429a-8bf0-7dd1adde29d2",
+      "name": "Read/Write Files from Disk",
+      "position": [
+        1760,
+        32
+      ],
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a text correction assistant. You will receive transcribed text from a video or audio. Your task is to:\n1. Correct spelling and grammar errors\n2. Fix punctuation\n3. Improve readability while preserving the original meaning\n4. Maintain the original language\n\nProvide only the corrected text without any additional explanations or commentary.\n\nTranscribed text to correct:\n{{ $json.transcription }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c9203612-bb4e-4e0e-8340-a5e5c192fa35",
+      "name": "Message a model",
+      "position": [
+        1184,
+        128
+      ],
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "credentials": {
+        "openAiApi": {
+          "id": "FNZYVJ9gntu30ITG",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "message.content",
+        "options": {
+          "fileName": "={{ $json.video_title }}_fixed_by_ai.txt"
+        }
+      },
+      "id": "convert-ai-response-to-file",
+      "name": "Convert AI Response to File",
+      "position": [
+        1536,
+        128
+      ],
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1
+    }
+  ],
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Enter YouTube URL",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Enter YouTube URL": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Download Audio from YouTube",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Download Audio from YouTube": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Read Audio File",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Read Audio File": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Transcribe with Whisper",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Transcribe with Whisper": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Response1",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Response1": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Convert to File",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "Message a model",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Read/Write Files from Disk",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Convert AI Response to File",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Convert AI Response to File": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "206adf6655ba61d819856ed7ca9125a8e9b0a533b7fbb1ed0b047dc4ade2df87"
+  }
+}
