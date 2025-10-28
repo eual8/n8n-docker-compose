@@ -2,3 +2,5 @@
 .env
 database.sqlite
 database.sqlite.backup
+database.sqlite.backup-shm
+database.sqlite.backup-wal
