@@ -81,6 +81,49 @@ def download_video():
         if not url:
             return jsonify({'error': 'URL is required'}), 400
         
+        # Сначала получаем информацию о видео без скачивания
+        info_opts = {
+            'quiet': True,
+            'no_warnings': True,
+            'extract_flat': False,
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'web']
+                }
+            },
+            'http_headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+        }
+        
+        with yt_dlp.YoutubeDL(info_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            video_id = info.get('id')
+            video_title = info.get('title')
+        
+        # Определяем ожидаемое имя файла и расширение
+        if format_type == 'audio':
+            expected_ext = '.mp3'
+        else:
+            expected_ext = '.webm'  # или другое расширение по умолчанию
+        
+        expected_filename = f"{video_id}{expected_ext}"
+        expected_path = os.path.join(DOWNLOAD_DIR, expected_filename)
+        
+        # Проверяем существование файла на диске
+        file_exists = os.path.exists(expected_path)
+        
+        if file_exists:
+            # Файл уже существует, возвращаем информацию без скачивания
+            return jsonify({
+                'status': 'success',
+                'filename': expected_filename,
+                'path': expected_path,
+                'title': video_title,
+                'downloaded': False,  # Файл не был скачан, взят с диска
+            }), 200
+        
+        # Файл не существует, скачиваем
         # Настройки для скачивания
         ydl_opts = {
             'outtmpl': os.path.join(DOWNLOAD_DIR, '%(id)s.%(ext)s'),
@@ -139,6 +182,7 @@ def download_video():
             'filename': os.path.basename(filename),
             'path': filename,
             'title': info.get('title'),
+            'downloaded': True,  # Файл был скачан
         }), 200
         
     except Exception as e:
