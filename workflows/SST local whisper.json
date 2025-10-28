@@ -2,11 +2,11 @@
   "nodes": [
     {
       "parameters": {},
-      "id": "manual_trigger",
+      "id": "89dafc23-2a87-4f20-8738-547432c5f17c",
       "name": "When clicking 'Test workflow'",
       "position": [
-        208,
-        304
+        -224,
+        -48
       ],
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1
@@ -19,17 +19,17 @@
               "id": "youtube_url",
               "name": "url",
               "type": "string",
-              "value": "https://www.youtube.com/watch?v=Xjlalqbp8dU"
+              "value": "https://www.youtube.com/watch?v=UHHN-mYYQ1g"
             }
           ]
         },
         "options": {}
       },
-      "id": "get_youtube_url",
+      "id": "89ecf002-8a84-4fca-aecd-4c9c97480d2e",
       "name": "Enter YouTube URL",
       "position": [
-        432,
-        304
+        0,
+        -48
       ],
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4
@@ -55,11 +55,11 @@
           "timeout": 7200000
         }
       },
-      "id": "download_audio",
+      "id": "715f45c3-4094-4786-b6d4-df67d28b557f",
       "name": "Download Audio from YouTube",
       "position": [
-        640,
-        304
+        208,
+        -48
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2
@@ -68,11 +68,11 @@
       "parameters": {
         "filePath": "={{ $json.path }}"
       },
-      "id": "read_audio_file",
+      "id": "3f1fae2e-df74-4221-8856-fd51a7da1cd5",
       "name": "Read Audio File",
       "position": [
-        880,
-        304
+        448,
+        -48
       ],
       "type": "n8n-nodes-base.readBinaryFile",
       "typeVersion": 1
@@ -92,7 +92,7 @@
             },
             {
               "name": "model",
-              "value": "medium"
+              "value": "large"
             }
           ]
         },
@@ -100,14 +100,46 @@
           "timeout": 7200000
         }
       },
-      "id": "transcribe_audio",
+      "id": "d9aa82a1-a705-456c-aa25-fdb7d13dabee",
       "name": "Transcribe with Whisper",
       "position": [
-        1088,
-        304
+        656,
+        -48
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $binary.data.fileName }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        -48
+      ],
+      "id": "b1196954-5d8c-4d21-bd01-45768944ecf6",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "=transcription",
+        "options": {
+          "fileName": "={{ $json.video_title }}.txt"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1024,
+        -48
+      ],
+      "id": "38b74f7b-6511-4bba-8838-451f13b5ccf9",
+      "name": "Convert to File"
     },
     {
       "parameters": {
@@ -135,17 +167,17 @@
               "id": "video_title",
               "name": "video_title",
               "type": "string",
-              "value": "={{ $('Download Audio from YouTube').item.json.title }}"
+              "value": "={{ $('Download Audio from YouTube').item.json.title.replace(/[^a-zA-Zа-яА-ЯёЁ0-9\\s_-]/g, \"\").replace(/\\s+/g, \"_\").trim() }}"
             }
           ]
         },
         "options": {}
       },
-      "id": "format_response",
-      "name": "Format Response",
+      "id": "990fb885-079f-4037-be6d-5358ef804c93",
+      "name": "Format Response1",
       "position": [
-        1312,
-        304
+        848,
+        -48
       ],
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4
@@ -156,9 +188,9 @@
       "main": [
         [
           {
-            "index": 0,
             "node": "Enter YouTube URL",
-            "type": "main"
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -167,9 +199,9 @@
       "main": [
         [
           {
-            "index": 0,
             "node": "Download Audio from YouTube",
-            "type": "main"
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -178,9 +210,9 @@
       "main": [
         [
           {
-            "index": 0,
             "node": "Read Audio File",
-            "type": "main"
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -189,9 +221,9 @@
       "main": [
         [
           {
-            "index": 0,
             "node": "Transcribe with Whisper",
-            "type": "main"
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -200,9 +232,31 @@
       "main": [
         [
           {
-            "index": 0,
-            "node": "Format Response",
-            "type": "main"
+            "node": "Format Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response1": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -210,6 +264,6 @@
   },
   "pinData": {},
   "meta": {
-    "instanceId": "73786a5cd1090f274a664d4f2d8ca5403e1875652b63571358d70367452e0139"
+    "instanceId": "206adf6655ba61d819856ed7ca9125a8e9b0a533b7fbb1ed0b047dc4ade2df87"
   }
 }
