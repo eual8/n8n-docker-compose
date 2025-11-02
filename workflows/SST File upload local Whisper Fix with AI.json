@@ -1,0 +1,268 @@
+{
+  "name": "SST + File upload + local Whisper + Fix with AI copy",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://whisper:8082/transcribe",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "=file"
+            },
+            {
+              "name": "model",
+              "value": "large"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 7200000
+        }
+      },
+      "id": "1b6806de-d210-4752-a782-de23e1c8d50d",
+      "name": "Transcribe with Whisper",
+      "position": [
+        320,
+        32
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "text_field",
+              "name": "transcription",
+              "type": "string",
+              "value": "={{ $json.text }}"
+            },
+            {
+              "id": "language_field",
+              "name": "language",
+              "type": "string",
+              "value": "={{ $json.language }}"
+            },
+            {
+              "id": "duration_field",
+              "name": "duration",
+              "type": "number",
+              "value": "={{ $json.duration }}"
+            },
+            {
+              "id": "video_title",
+              "name": "video_title",
+              "type": "string",
+              "value": "={{ $('Download Audio from YouTube').first() ? $('Download Audio from YouTube').item.json.title.replace(/[^a-zA-Zа-яА-ЯёЁ0-9\\s_-]/g, '').replace(/\\s+/g, '_').trim() : (() => { const binary = $('Form').first()?.binary; const key = binary ? Object.keys(binary)[0] : null; const name = key && binary[key]?.fileName ? binary[key].fileName : 'uploaded_audio'; return name.replace(/\\.[^/.]+$/, '').replace(/[^a-zA-Zа-яА-ЯёЁ0-9\\s_-]/g, '').replace(/\\s+/g, '_').trim(); })() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5e26ad4c-fb95-4842-a5ce-8bb04efcba46",
+      "name": "Format Transcription Result",
+      "position": [
+        608,
+        32
+      ],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "=transcription",
+        "options": {
+          "fileName": "={{ $json.video_title }}.txt"
+        }
+      },
+      "id": "9e54ab4b-84d8-45bf-bbd6-4fa9ea3fe35b",
+      "name": "Convert to File",
+      "position": [
+        1184,
+        -64
+      ],
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $binary.data.fileName }}",
+        "options": {}
+      },
+      "id": "27a6372f-5296-4b75-ac44-7cb835069120",
+      "name": "Read/Write Files from Disk",
+      "position": [
+        1408,
+        32
+      ],
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a text correction assistant. You will receive transcribed text from a video or audio. Your task is to:\n1. Correct spelling and grammar errors\n2. Fix punctuation\n3. Improve readability while preserving the original meaning\n4. Maintain the original language\n\nProvide only the corrected text without any additional explanations or commentary.\n\nTranscribed text to correct:\n{{ $json.transcription }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8927e499-1644-4aee-b0c7-9e5e97b43b66",
+      "name": "Message a model",
+      "position": [
+        832,
+        128
+      ],
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "credentials": {
+        "openAiApi": {
+          "id": "FNZYVJ9gntu30ITG",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "message.content",
+        "options": {
+          "fileName": "={{ $json.video_title }}_fixed_by_ai.txt"
+        }
+      },
+      "id": "edf6abe7-d7e2-45c4-87aa-f2f92fef534d",
+      "name": "Convert AI Response to File",
+      "position": [
+        1184,
+        128
+      ],
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "formTitle": "Upload mp3 file",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "file",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "acceptFileTypes": ".mp3",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -16,
+        32
+      ],
+      "id": "4dcccfa2-8a0f-46f2-8242-5e502afd584f",
+      "name": "On form submission",
+      "webhookId": "7b87f77e-1eec-4be6-bb57-36438a78c812"
+    }
+  ],
+  "connections": {
+    "Convert AI Response to File": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Read/Write Files from Disk",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Format Transcription Result": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Convert to File",
+            "type": "main"
+          },
+          {
+            "index": 0,
+            "node": "Message a model",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Convert AI Response to File",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Transcribe with Whisper": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Format Transcription Result",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Transcribe with Whisper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8GliDXb1VTGx5ay6"
+  },
+  "pinData": {},
+  "versionId": "d396414c-475c-48fc-beea-993d4fff70c6",
+  "triggerCount": 0,
+  "tags": []
+}
