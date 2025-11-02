@@ -1,5 +1,4 @@
 {
-  "name": "SST + File upload + local Whisper + Fix with AI copy",
   "nodes": [
     {
       "parameters": {
@@ -27,7 +26,7 @@
       "id": "1b6806de-d210-4752-a782-de23e1c8d50d",
       "name": "Transcribe with Whisper",
       "position": [
-        320,
+        208,
         32
       ],
       "type": "n8n-nodes-base.httpRequest",
@@ -59,7 +58,7 @@
               "id": "video_title",
               "name": "video_title",
               "type": "string",
-              "value": "={{ $('Download Audio from YouTube').first() ? $('Download Audio from YouTube').item.json.title.replace(/[^a-zA-Zа-яА-ЯёЁ0-9\\s_-]/g, '').replace(/\\s+/g, '_').trim() : (() => { const binary = $('Form').first()?.binary; const key = binary ? Object.keys(binary)[0] : null; const name = key && binary[key]?.fileName ? binary[key].fileName : 'uploaded_audio'; return name.replace(/\\.[^/.]+$/, '').replace(/[^a-zA-Zа-яА-ЯёЁ0-9\\s_-]/g, '').replace(/\\s+/g, '_').trim(); })() }}"
+              "value": "={{ $('On form submission').first().binary.file.fileName.replace(/\\.[^/.]+$/, '').replace(/[^a-zA-Zа-яА-ЯёЁ0-9\\s_-]/g, '').replace(/\\s+/g, '_').trim() }}"
             }
           ]
         },
@@ -68,7 +67,7 @@
       "id": "5e26ad4c-fb95-4842-a5ce-8bb04efcba46",
       "name": "Format Transcription Result",
       "position": [
-        608,
+        432,
         32
       ],
       "type": "n8n-nodes-base.set",
@@ -85,7 +84,7 @@
       "id": "9e54ab4b-84d8-45bf-bbd6-4fa9ea3fe35b",
       "name": "Convert to File",
       "position": [
-        1184,
+        1008,
         -64
       ],
       "type": "n8n-nodes-base.convertToFile",
@@ -100,7 +99,7 @@
       "id": "27a6372f-5296-4b75-ac44-7cb835069120",
       "name": "Read/Write Files from Disk",
       "position": [
-        1408,
+        1232,
         32
       ],
       "type": "n8n-nodes-base.readWriteFile",
@@ -126,7 +125,7 @@
       "id": "8927e499-1644-4aee-b0c7-9e5e97b43b66",
       "name": "Message a model",
       "position": [
-        832,
+        656,
         128
       ],
       "type": "@n8n/n8n-nodes-langchain.openAi",
@@ -143,13 +142,13 @@
         "operation": "toText",
         "sourceProperty": "message.content",
         "options": {
-          "fileName": "={{ $json.video_title }}_fixed_by_ai.txt"
+          "fileName": "={{ $('Format Transcription Result').first().json.video_title }}_fixed_by_ai.txt"
         }
       },
       "id": "edf6abe7-d7e2-45c4-87aa-f2f92fef534d",
       "name": "Convert AI Response to File",
       "position": [
-        1184,
+        1008,
         128
       ],
       "type": "n8n-nodes-base.convertToFile",
@@ -183,23 +182,12 @@
     }
   ],
   "connections": {
-    "Convert AI Response to File": {
-      "main": [
-        [
-          {
-            "node": "Read/Write Files from Disk",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Convert to File": {
+    "Transcribe with Whisper": {
       "main": [
         [
           {
             "index": 0,
-            "node": "Read/Write Files from Disk",
+            "node": "Format Transcription Result",
             "type": "main"
           }
         ]
@@ -221,6 +209,17 @@
         ]
       ]
     },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Read/Write Files from Disk",
+            "type": "main"
+          }
+        ]
+      ]
+    },
     "Message a model": {
       "main": [
         [
@@ -232,13 +231,13 @@
         ]
       ]
     },
-    "Transcribe with Whisper": {
+    "Convert AI Response to File": {
       "main": [
         [
           {
-            "index": 0,
-            "node": "Format Transcription Result",
-            "type": "main"
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -255,14 +254,8 @@
       ]
     }
   },
-  "settings": {},
-  "staticData": null,
-  "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "8GliDXb1VTGx5ay6"
-  },
   "pinData": {},
-  "versionId": "d396414c-475c-48fc-beea-993d4fff70c6",
-  "triggerCount": 0,
-  "tags": []
+  "meta": {
+    "instanceId": "206adf6655ba61d819856ed7ca9125a8e9b0a533b7fbb1ed0b047dc4ade2df87"
+  }
 }
