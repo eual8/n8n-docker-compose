@@ -1,28 +1,28 @@
 FROM python:3.11-slim
 
-# Установка системных зависимостей
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Создание рабочей директории
+# Create working directory
 WORKDIR /app
 
-# Копирование файлов зависимостей
+# Copy dependency file
 COPY requirements.txt .
 
-# Обновление pip и установка зависимостей
+# Upgrade pip and install dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Копирование приложения
+# Copy application
 COPY app.py .
 
-# Создание директории для временных файлов
+# Create temp directory for processing
 RUN mkdir -p /tmp/whisper
 
-# Открытие порта
+# Expose service port
 EXPOSE 8082
 
-# Запуск приложения
+# Start application
 CMD ["python", "app.py"]

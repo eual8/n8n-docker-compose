@@ -1,27 +1,27 @@
 FROM python:3.11-slim
 
-# Установка системных зависимостей
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Установка yt-dlp и Flask
+# Install yt-dlp and Flask
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir \
     yt-dlp \
     flask \
     flask-cors
 
-# Создание директории для загрузок
+# Create downloads directory
 RUN mkdir -p /downloads
 
-# Копирование приложения
+# Copy application
 COPY app.py /app/app.py
 
 WORKDIR /app
 
-# Открытие порта
+# Expose service port
 EXPOSE 8081
 
-# Запуск приложения
+# Start application
 CMD ["python", "app.py"]

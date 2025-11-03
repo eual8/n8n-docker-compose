@@ -31,9 +31,6 @@ services:
     volumes:
       - ytdlp_downloads:/downloads
       - ytdlp_cache:/root/.cache
-    profiles:
-      - basic
-      - full
 
   labse:
     build:
@@ -59,9 +56,6 @@ services:
     volumes:
       - whisper_cache:/root/.cache
       - whisper_models:/root/.cache/whisper
-    profiles:
-      - basic
-      - full
 
   n8n:
     build:
@@ -85,9 +79,6 @@ services:
     volumes:
       - n8n_data:/home/node/.n8n
       - ytdlp_downloads:/downloads:ro
-    profiles:
-      - basic
-      - full
 
 volumes:
   esdata:

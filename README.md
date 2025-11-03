@@ -2,61 +2,7 @@
 
 A complete Docker Compose setup for running n8n automation workflows with integrated AI services and document processing capabilities.
 
-## 🚀 What is this repository?
-
-This repository provides a ready-to-use Docker Compose stack that includes:
-
-- **n8n** - No-code automation platform for building workflows
-- **Elasticsearch** - Search and analytics engine for document indexing
-- **Ollama** - Local LLM inference server for AI capabilities
-- **LaBSE** - Multilingual text embeddings service (109 languages supported)
-- **YT-DLP** - YouTube and video platform downloader with REST API
-- **Whisper** - Audio transcription service using OpenAI Whisper (faster-whisper)
-
-## 🎯 Why use this stack?
-
-This setup is perfect for:
-
-- **Document Processing & Search**: Upload text files, automatically split them into paragraphs, and index them in Elasticsearch for semantic search
-- **AI-Powered Workflows**: Leverage local LLM models through Ollama for text processing, analysis, and generation
-- **Multilingual Text Analysis**: Use LaBSE embeddings for cross-language semantic similarity and search
-- **Audio Transcription**: Convert audio files to text using state-of-the-art Whisper models
-- **No-Code Automation**: Build complex workflows without programming using n8n's visual interface
-- **Privacy-First AI**: All AI processing happens locally - no data sent to external APIs
-
-## 📋 Services Overview
-
-| Service | Port | Purpose | Access |
-|---------|------|---------|--------|
-| **n8n** | 5678 | Workflow automation platform | http://localhost:5678 |
-| **Elasticsearch** | 9200 | Document search and analytics | http://localhost:9200 |
-| **Ollama** | 11434 | Local LLM inference server | http://localhost:11434 |
-| **LaBSE** | 8080 | Multilingual embeddings API | http://localhost:8080 |
-| **YT-DLP** | 8081 | YouTube video/audio downloader | http://localhost:8081 |
-| **Whisper** | 8082 | Audio transcription service | http://localhost:8082 |
-
-## 🎬 Ready-to-Use Workflows
-
-### YouTube Video Transcription (Manual)
-
-Automatically transcribe YouTube videos to text:
-
-1. **Open n8n**: http://localhost:5678 (login: admin / password)
-2. **Find workflow**: "YouTube Video Transcription (Manual)"
-3. **Edit URL**: Open "Enter YouTube URL" node and paste your YouTube link
-4. **Run**: Click "Execute workflow"
-5. **Get result**: View transcription in "Format Response" node
-
-📖 **Full instructions**: See `workflows/QUICK_START.md`
-
-**Features:**
-- ✅ Simple form-based input
-- ✅ Automatic audio extraction
-- ✅ Multi-language support (auto-detect or specify)
-- ✅ Timestamped segments
-- ✅ Multiple Whisper models (tiny to large)
-
-## 🛠 Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
 
@@ -69,7 +15,16 @@ Automatically transcribe YouTube videos to text:
 ```bash
 git clone <repository-url>
 cd n8n-docker-compose
+```
+
+**Start the default (basic) set (ytdlp, whisper, n8n):**
+```bash
 docker-compose up -d --build
+```
+
+**Start the full set (all services):**
+```bash
+docker-compose --profile full up -d --build
 ```
 
 ### 2. Access n8n
@@ -84,6 +39,62 @@ docker-compose up -d --build
 1. In n8n, go to **Workflows** → **Import from File**
 2. Upload `workflows/Text File to Elasticsearch Indexer - Working Version.json`
 3. Activate the workflow
+
+## 🎯 What is this repository?
+
+This repository provides a ready-to-use Docker Compose stack that includes:
+
+- **n8n** - No-code automation platform for building workflows
+- **Elasticsearch** - Search and analytics engine for document indexing
+- **Ollama** - Local LLM inference server for AI capabilities
+- **LaBSE** - Multilingual text embeddings service (109 languages supported)
+- **YT-DLP** - YouTube and video platform downloader with REST API
+- **Whisper** - Audio transcription service using OpenAI Whisper (faster-whisper)
+
+## 🎯 Why use this stack?
+
+This setup is ideal for:
+
+- **Document Processing & Search**: Upload text files, automatically split them into paragraphs, and index them in Elasticsearch for semantic search
+- **AI-Powered Workflows**: Leverage local LLM models through Ollama for text processing, analysis, and generation
+- **Multilingual Text Analysis**: Use LaBSE embeddings for cross-language semantic similarity and search
+- **Audio Transcription**: Convert audio files to text using state-of-the-art Whisper models
+- **No-Code Automation**: Build complex workflows without programming using n8n's visual interface
+- **Privacy-First AI**: All AI processing happens locally — no data sent to external APIs
+
+## 📋 Services Overview
+
+| Service | Port | Purpose | Access |
+|---------|------|---------|--------|
+| **n8n** | 5678 | Workflow automation platform | http://localhost:5678 |
+| **Elasticsearch** | - | Document search and analytics | Internal (via Docker network) |
+| **Ollama** | - | Local LLM inference server | Internal (via Docker network) |
+| **LaBSE** | - | Multilingual embeddings API | Internal (via Docker network) |
+| **YT-DLP** | - | YouTube video/audio downloader | Internal (via Docker network) |
+| **Whisper** | - | Audio transcription service | Internal (via Docker network) |
+
+*Note: Ports for services other than n8n are not forwarded to localhost to avoid conflicts. They are accessible from n8n or other containers via the Docker network.*
+
+## 🎬 Ready-to-Use Workflows
+
+### YouTube Video Transcription (Manual)
+
+Automatically transcribe YouTube videos to text:
+
+1. **Open n8n**: http://localhost:5678 (login: admin / password)
+2. **Find workflow**: "YouTube Video Transcription (Manual)"
+3. **Edit URL**: Open the "Enter YouTube URL" node and paste your YouTube link
+4. **Run**: Click "Execute workflow"
+5. **Get result**: View the transcription in the "Format Response" node
+
+📖 **Full instructions**: See `workflows/QUICK_START.md`
+
+**Features:**
+- ✅ Simple form-based input
+- ✅ Automatic audio extraction
+- ✅ Multi-language support (auto-detect or specify)
+- ✅ Timestamped segments
+- ✅ Multiple Whisper models (tiny to large)
 
 ## 📊 Sample Workflow: Text File Indexer
 
@@ -105,19 +116,19 @@ The included workflow demonstrates the stack's capabilities:
 ### n8n Configuration
 - Basic authentication enabled
 - Persistent data storage
-- Connected to all other services
-- Production-ready settings
+- Connected to other services via Docker network
+- Production-oriented settings for local development
 
 ### Elasticsearch
 - Single-node setup
-- No security (for local development)
+- No authentication (for local development)
 - Persistent data volume
 - Optimized for document storage
 
 ### Ollama
 - Ready for LLM model installation
 - Persistent model storage
-- GPU acceleration support (if available)
+- GPU acceleration supported if available
 
 ### LaBSE Embeddings
 - FastAPI-based service
@@ -128,12 +139,12 @@ The included workflow demonstrates the stack's capabilities:
 ### YT-DLP Service
 - Download videos from YouTube and 1000+ sites
 - Extract audio in MP3 format
-- Get video metadata and transcripts
+- Return video metadata and transcripts
 - REST API for easy integration
 
 ### Whisper Transcription
 - Audio-to-text transcription using faster-whisper
-- Support for multiple audio formats (MP3, WAV, M4A, OGG, FLAC, WebM)
+- Supports multiple audio formats (MP3, WAV, M4A, OGG, FLAC, WebM)
 - Automatic language detection
 - Multiple model sizes (tiny, base, small, medium, large)
 - Timestamp generation for each segment
@@ -141,38 +152,38 @@ The included workflow demonstrates the stack's capabilities:
 
 ## 📚 Usage Examples
 
-### Generate Embeddings
+### Generate Embeddings (requires --profile full)
 ```bash
 curl -X POST http://localhost:8080/embeddings \
   -H "Content-Type: application/json" \
   -d '{"texts": ["Hello world", "Привет мир", "Hola mundo"]}'
 ```
 
-### Search Elasticsearch
+### Search Elasticsearch (requires --profile full)
 ```bash
 curl -X GET "http://localhost:9200/documents/_search?q=your_search_term"
 ```
 
-### Install Ollama Models
+### Install Ollama Models (requires --profile full)
 ```bash
 docker exec -it ollama ollama pull llama2
 ```
 
-### Download YouTube Video
+### Download YouTube Video (available in the basic set)
 ```bash
 curl -X POST http://localhost:8081/download \
   -H "Content-Type: application/json" \
   -d '{"url": "https://www.youtube.com/watch?v=VIDEO_ID", "format": "video", "quality": "best"}'
 ```
 
-### Download YouTube Audio (MP3)
+### Download YouTube Audio (MP3) (available in the basic set)
 ```bash
 curl -X POST http://localhost:8081/download \
   -H "Content-Type: application/json" \
   -d '{"url": "https://www.youtube.com/watch?v=VIDEO_ID", "format": "audio"}'
 ```
 
-### Transcribe Audio File
+### Transcribe Audio File (available in the basic set)
 ```bash
 # Basic transcription
 curl -X POST http://localhost:8082/transcribe \
@@ -192,10 +203,10 @@ curl -X POST http://localhost:8082/transcribe \
 
 ## 🔍 API Documentation
 
-- **LaBSE API**: http://localhost:8080/docs
+- **LaBSE API**: http://localhost:8080/docs (requires --profile full)
 - **YT-DLP API**: See `docker/ytdlp/README.md` for full API documentation
 - **Whisper API**: See `docker/whisper/README.md` for full API documentation
-- **Elasticsearch**: http://localhost:9200
+- **Elasticsearch**: http://localhost:9200 (requires --profile full)
 - **n8n Webhooks**: Available through workflow triggers
 
 ## 💾 Data Persistence

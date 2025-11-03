@@ -11,12 +11,12 @@ DOWNLOAD_DIR = '/downloads'
 
 @app.route('/health', methods=['GET'])
 def health():
-    """Проверка здоровья сервиса"""
+    """Service health check"""
     return jsonify({'status': 'healthy', 'service': 'yt-dlp'}), 200
 
 @app.route('/info', methods=['POST'])
 def get_video_info():
-    """Получение информации о видео без скачивания"""
+    """Get video info without downloading"""
     try:
         data = request.get_json()
         url = data.get('url')
@@ -28,13 +28,13 @@ def get_video_info():
             'quiet': True,
             'no_warnings': True,
             'extract_flat': False,
-            # Добавляем параметры для обхода ограничений YouTube
+            # Add options to bypass some YouTube restrictions
             'extractor_args': {
                 'youtube': {
                     'player_client': ['android', 'web']
                 }
             },
-            # Добавляем User-Agent
+            # Add User-Agent
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             }
@@ -43,7 +43,7 @@ def get_video_info():
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             
-            # Извлекаем основную информацию
+            # Extract main information
             video_info = {
                 'title': info.get('title'),
                 'description': info.get('description'),
@@ -71,17 +71,17 @@ def get_video_info():
 
 @app.route('/download', methods=['POST'])
 def download_video():
-    """Скачивание видео или аудио"""
+    """Download video or audio"""
     try:
         data = request.get_json()
         url = data.get('url')
-        format_type = data.get('format', 'video')  # 'video', 'audio', или 'best'
-        quality = data.get('quality', 'best')  # 'best', '1080p', '720p', и т.д.
-        
+        format_type = data.get('format', 'video')  # 'video', 'audio', or 'best'
+        quality = data.get('quality', 'best')  # 'best', '1080p', '720p', etc.
+
         if not url:
             return jsonify({'error': 'URL is required'}), 400
         
-        # Сначала получаем информацию о видео без скачивания
+        # First get video info without downloading
         info_opts = {
             'quiet': True,
             'no_warnings': True,
@@ -101,55 +101,54 @@ def download_video():
             video_id = info.get('id')
             video_title = info.get('title')
         
-        # Определяем ожидаемое имя файла и расширение
+        # Determine expected filename and extension
         if format_type == 'audio':
             expected_ext = '.mp3'
         else:
-            expected_ext = '.webm'  # или другое расширение по умолчанию
-        
+            expected_ext = '.webm'  # default extension for video
+
         expected_filename = f"{video_id}{expected_ext}"
         expected_path = os.path.join(DOWNLOAD_DIR, expected_filename)
         
-        # Проверяем существование файла на диске
+        # Check if file exists on disk
         file_exists = os.path.exists(expected_path)
         
         if file_exists:
-            # Файл уже существует, возвращаем информацию без скачивания
+            # File already exists, return info without downloading
             return jsonify({
                 'status': 'success',
                 'filename': expected_filename,
                 'path': expected_path,
                 'title': video_title,
-                'downloaded': False,  # Файл не был скачан, взят с диска
+                'downloaded': False,
             }), 200
         
-        # Файл не существует, скачиваем
-        # Настройки для скачивания
+        # File doesn't exist, proceed to download
         ydl_opts = {
             'outtmpl': os.path.join(DOWNLOAD_DIR, '%(id)s.%(ext)s'),
             'quiet': False,
             'no_warnings': False,
-            # Добавляем параметры для обхода ограничений YouTube
+            # Add options to bypass some YouTube restrictions
             'extractor_args': {
                 'youtube': {
                     'player_client': ['android', 'web']
-                    # Убираем 'skip' чтобы не блокировать доступные форматы
+                    # Avoid 'skip' to not block available formats
                 }
             },
-            # Добавляем User-Agent
+            # Add User-Agent
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             },
-            # Игнорируем ошибки для более стабильной работы
+            # Fail on errors for more stable behavior
             'ignoreerrors': False,
-            # Разрешаем использовать все доступные форматы
+            # Allow using available formats
             'allow_unplayable_formats': False,
         }
         
-        # Настройка формата в зависимости от типа
+        # Format selection depending on type
         if format_type == 'audio':
             ydl_opts.update({
-                # Самый простой и надёжный вариант для аудио
+                # Simple and reliable audio option
                 'format': 'bestaudio/best',
                 'postprocessors': [{
                     'key': 'FFmpegExtractAudio',
@@ -158,22 +157,21 @@ def download_video():
                 }],
             })
         elif format_type == 'video':
-            # Используем самый простой и надёжный селектор
-            # Это всегда сработает, так как YouTube всегда имеет хотя бы один формат
+            # Use the simplest reliable selector
             ydl_opts['format'] = 'best'
-            # Опционально добавляем merge если нужно объединить видео и аудио
+            # Optionally limit height if quality specified
             if quality != 'best':
                 height = quality.replace("p", "")
                 ydl_opts['format'] = f'best[height<={height}]/best'
         else:
             ydl_opts['format'] = 'best'
         
-        # Скачивание
+        # Download
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             filename = ydl.prepare_filename(info)
             
-            # Если это аудио, имя файла изменится после постобработки
+            # If audio, filename changes after postprocessing
             if format_type == 'audio':
                 filename = os.path.splitext(filename)[0] + '.mp3'
             
@@ -182,7 +180,7 @@ def download_video():
             'filename': os.path.basename(filename),
             'path': filename,
             'title': info.get('title'),
-            'downloaded': True,  # Файл был скачан
+            'downloaded': True,
         }), 200
         
     except Exception as e:
@@ -190,12 +188,12 @@ def download_video():
 
 @app.route('/download-transcript', methods=['POST'])
 def download_transcript():
-    """Получение субтитров/транскрипта видео"""
+    """Download video subtitles/transcript"""
     try:
         data = request.get_json()
         url = data.get('url')
-        lang = data.get('lang', 'en')  # Язык субтитров
-        
+        lang = data.get('lang', 'en')  # subtitle language
+
         if not url:
             return jsonify({'error': 'URL is required'}), 400
         
@@ -211,7 +209,7 @@ def download_transcript():
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             
-            # Получение субтитров
+            # Get subtitles
             subtitles = info.get('subtitles', {})
             automatic_captions = info.get('automatic_captions', {})
             
@@ -237,8 +235,8 @@ def download_transcript():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    # Создание директории для загрузок, если её нет
+    # Create downloads directory if missing
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
     
-    # Запуск сервера
+    # Start server
     app.run(host='0.0.0.0', port=8081, debug=False)
