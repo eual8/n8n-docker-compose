@@ -84,7 +84,7 @@
       "id": "9e54ab4b-84d8-45bf-bbd6-4fa9ea3fe35b",
       "name": "Convert to File",
       "position": [
-        1008,
+        1360,
         -64
       ],
       "type": "n8n-nodes-base.convertToFile",
@@ -99,28 +99,11 @@
       "id": "27a6372f-5296-4b75-ac44-7cb835069120",
       "name": "Read/Write Files from Disk",
       "position": [
-        1232,
+        1584,
         32
       ],
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1
-    },
-    {
-      "parameters": {
-        "operation": "toText",
-        "sourceProperty": "message.content",
-        "options": {
-          "fileName": "={{ $('Format Transcription Result').first().json.video_title }}_fixed_by_ai.txt"
-        }
-      },
-      "id": "edf6abe7-d7e2-45c4-87aa-f2f92fef534d",
-      "name": "Convert AI Response to File",
-      "position": [
-        1008,
-        128
-      ],
-      "type": "n8n-nodes-base.convertToFile",
-      "typeVersion": 1.1
     },
     {
       "parameters": {
@@ -179,6 +162,55 @@
           "name": "OpenAi account"
         }
       }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a translation assistant. Take the exact text provided and produce ONLY a Markdown table with two columns: \"Text\" (left) and \"Translation\" (right). Follow these rules exactly:\n\n1. Translate the ENTIRE input text into Russian. Do not omit, summarize, or reorder anything.\n2. Preserve the original order. Each original paragraph or line separated by a newline in the input must become a separate row in the table in the same sequence.\n3. Keep all original content in the left column unchanged (except for escaping Markdown table pipe characters). If the original contains the character '|' escape it as '\\|'.\n4. Right column must contain the full Russian translation of the corresponding left-cell content. Preserve meaning, punctuation and structure as much as possible. Do not add notes, explanations, comments or markup outside the table.\n5. If an original line is empty, include an empty cell on the left and the corresponding translation (empty) on the right.\n6. Do not output anything except the Markdown table. No heading, no preface, no trailing text.\n\nOutput example format:\n\n| Text | Translation |\n|---|---|\n| First original line (or paragraph) | Перевод первой строки |\n| Second original line | Перевод второй строки |\n\nNow process and translate: {{ $json.message.content }}\n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b680fb08-ca10-4019-b974-d8702933e38d",
+      "name": "Translate with AI",
+      "position": [
+        1008,
+        128
+      ],
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "credentials": {
+        "openAiApi": {
+          "id": "FNZYVJ9gntu30ITG",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "message.content",
+        "options": {
+          "fileName": "={{ $('Format Transcription Result').first().json.video_title }}_fixed_by_ai.md"
+        }
+      },
+      "id": "edf6abe7-d7e2-45c4-87aa-f2f92fef534d",
+      "name": "Convert to md",
+      "position": [
+        1360,
+        128
+      ],
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1
     }
   ],
   "connections": {
@@ -200,11 +232,6 @@
             "index": 0,
             "node": "Convert to File",
             "type": "main"
-          },
-          {
-            "index": 0,
-            "node": "Correct with AI",
-            "type": "main"
           }
         ]
       ]
@@ -216,17 +243,6 @@
             "index": 0,
             "node": "Read/Write Files from Disk",
             "type": "main"
-          }
-        ]
-      ]
-    },
-    "Convert AI Response to File": {
-      "main": [
-        [
-          {
-            "node": "Read/Write Files from Disk",
-            "type": "main",
-            "index": 0
           }
         ]
       ]
@@ -246,15 +262,50 @@
       "main": [
         [
           {
-            "index": 0,
-            "node": "Convert AI Response to File",
-            "type": "main"
+            "node": "Translate with AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Translate with AI": {
+      "main": [
+        [
+          {
+            "node": "Convert to md",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to md": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
     }
   },
-  "pinData": {},
+  "pinData": {
+    "Correct with AI": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Vorba de cultură cu Ema Stere. Bună ziua și bun venit la Vorba de cultură. În această săptămână vorbim despre Regina Maria. Se împlinesc 150 de ani de la nașterea sa. Invitata mea astăzi, căreia îi mulțumesc foarte mult, este doamna Georgeta Filiti, academician, istoric, autoare, editoare și să nu uităm, traducătoare. Bun venit, doamnă!\n\nMulțumesc pentru invitație! Am început prin a sublinia cuvântul traducătoare, pentru că știu că este pe cale să apară o carte care se numește Regina Maria, însemnări zilnice 1933, dumneavoastră ați tradus-o. E o continuare, pentru că eu am început să editez, să traduc adnotat jurnalul Reginei Maria din 1929. Deci, 1929. ’33, ’33 a apărut acum și sunt cu ’34 pe masa de lucru. Cum e să traduci jurnalul ăsta, despre care și Virginia Woolf a spus că e foarte bine scris?\n\nE adevărat, să știți că e o adevărată bucurie și cred că plăcerea cu care citesc fiecare cuvânt, evident că nu mi-o poate lua nimeni, sunt foarte geloasă de șansa pe care am avut-o. Știți de ce? Pentru că este un dialog pe care nu mulți oameni sunt în măsură să-l aibă cu un cronicar, dincolo de faptul că a fost suveran al țării, dar este un cronicar al României din răstimpul acesta. Trebuie să vă spun că Regina și-a început jurnalul odată cu primul război mondial. Dumneavoastră știți că atunci au fost niște evenimente mai speciale, în sensul că... Marile puteri se pregăteau, căutau pretextul și, evident, își căutau deopotrivă și aliați. Or, România, prin bogăția ei, prin poziția geografică, era un spațiu foarte solicitat. Și problema pentru români s-a pus de partea cu cui mergem. De partea centralilor, adică a Germaniei și a Austro-Ungariei, sau de partea Antantei. Adică Anglia—Franța. Să amintim că noi aveam un tratat. Nu uităm că monarhia noastră era de expresie germană, chiar dacă se dovediseră în multe împrejurări buni români, dar, dar, ei erau la origine nemți. Și exista un tratat secret de colaborare cu puterile centrale. Prin urmare, în 1914, după atentatul de la Sarajevo, Prin urmare, în 1914, după atentatul de la Sarajevo, toată lumea a crezut că România va da curs, dacă conflictul se extinde, va da curs acestei solicitări de a se apropia de puterile centrale. Și aici cred că intervine rolul foarte important, esențial, al reginei Maria.\n\nPentru că, vedeți, și aici nu e vorba, cred, numai de ea, e vorba și de noi. Pentru că, vedeți, și aici nu e vorba, cred, numai de ea, e vorba și de noi. Pentru că, vedeți, și aici nu e vorba, cred, numai de ea, e vorba și de noi. Pentru că, vedeți, și aici nu e vorba, cred, numai de ea, e vorba și de noi. Pentru că, vedeți, și aici nu e vorba, cred, numai de ea, e vorba și de noi. Pentru că, vedeți, și aici nu e vorba, cred, numai de ea, e vorba și de noi. Pentru că, vedeți, și aici nu e vorba, cred, numai de ea, e vorba și de noi. Pentru că, vedeți, și aici nu e vorba, cred, numai de ea, e vorba și de noi.\n\nsau era negativ. Dar era altceva. E o țară a cărei limbă nu o cunoaște, a cărei religie e creștină, dar e puțin alta decât a ei. Și sunt multe lucruri altfel decât era ea învățată. Și să nu uităm că era un copil în fond, avea 17 ani. Era o fetișcană, absolut. Și știți, mai e ceva. Carol I era un om foarte riguros. La palat era și multă seriozitate. Nu vreau să spun că trebuie să fie neseriozitate, dar în genere, doamnele de onoare erau niște bătrâne care se apropiau de a fi otrăvi. Ori fata asta tânără, exclusivă, tornică de petreceri, de flărturi, flărturi care nu aveau nimic indecent, păcătos în ele, suferă încruzitor de mult. Și regele multă vreme n-a înțeles-o. Să vă dau un exemplu mărunt. Să se căsătorească cu Ferdinand. Imediat rămâne însărcinată, face copilul și ea era învățată să trăiască în case aerisite unde se făcea curent, unde lumea respira. La noi obiceiul pentru camera ale huzei era să se lipească ferestrele cu cocă, ca nu cumva să vină elele înăuntru. Și să-l tragă curentul. Curentul, coranderul. Toate lucrurile acestea sigur că au contrariat-o, dar în același timp și aici, în asta cred că constă superioritatea educației britanice, a știut să se adapteze. Și-a dat seama că dacă va cunoaște în profunzime această țară, în cele din urmă o va iubi, o va înțelege, se va apropia de ea. Și așa a fost. Pas cu pas, pas cu pas, de la unul, de la altul. Și-a creat un cerc larg de prietene în spațiul românesc. A ajuns să gândească România ca țara ei în așa fel încât în perioada de neutralitate, poate persoana care a militat cel mai elocvent, pe lângă miniștri, pe lângă soți, pe lângă puterile străine, a fost Regina Maria.\n\nDe ce trebuia noi să mergem de partea Antantei și nu de partea puterilor centrale? Pentru că noi aveam un gând, gând pe care îl putuse puțin materializa o clipă la 1600, Mihai Viteazu, să realizease unirea din 1859 a țării românești cu Moldova. Și acum, într-o perspectivă nedefinită, dar care rămânea perspectivă, ar fi fost unirea și cu Transilvania. Și lucrul acesta ar fi fost posibil numai dacă noi participăm de partea Antantei. Sigur că aici se ridica o problemă, o problemă majoră care, dacă vreți, e ca un dat în istoria noastră, și anume: a merge cu puterile centrale însemna automat să mergem și cu Rusia. Ori noi, cu Rusia, nu putem spune că am avut relații prietenești vreodată. Regina Maria avea pentru că, în fund, era din familie. Mama ei era mare ducesă. Era mare ducesă, era fica țarului care îl precedase pe Nicolae, pe vărul ei, fără îndoială. Dar, știți, asta era la nivel de familie. Însă, la nivel de state și de politică statală, noi ar fi trebuit să păstrăm o distanță.\n\nDar, dincolo de treaba asta, Maria a susținut în continuu ca noi să mergem de partea puterilor Antantei. Și trebuie să-l înțelegem și pe regele Ferdinand. El a venit la 12 ani în țară, ca profesor, a avut buni români, știa istoria româniei ca nimeni altul, știa folclor, vorbea o limbă română perfectă, se simțea absolut român. Și, atunci, când s-a pus problema de partea cui mergem, să știți că sufletul lui a fost sfâșiat. El venea din lumea germană. Dar, în același timp, jurase, acum din 1914 era rege, jurase să fie un bun suveran român. Și s-a ținut de cuvânt și a călcat pe inimă, a uitat că venea din lumea germană și s-a purtat ca un bun român. Și știți, nouă ne place, asta este istoria contrafactuală, ce s-ar fi întâmplat dacă, totuși, cu toată pledoaria reginei Maria, așa multora altora, n-a fost o voce singuratică, ce s-ar fi întâmplat dacă noi, totuși, treceam de partea centralilor. Exista deja un tratat semnat de Alexandru Margiloman. Exact, nu? Adică au fost câteva lucruri pe muche de cuțit. Tratatul cu Germania, care era tainic, dar pe care îl știau toți oamenii, politicienii îl cunoșteau, nevoia suveranului să-și convoace toți oamenii politici la dezbateri. El nu lua hotărârile așa, de unul singur. Și balanța putea să încline către puterile centrale. Numai că, vedeți, ceilalți au fost foarte elogvenți, au adus dovezi peste dovezi de avantajele care ar urma. Și-a biruit acest punct de vedere.\n\nRegina Maria, de câte ori a putut, a vorbit în sensul acesta și se spune că la un moment dat, primind mai mulți ambasadori străini, avea o rochie superbă, roșie, aprinsă, așa, și cineva a remarcat: „dar ce rochie frumoasă aveți”, zice: „eu totdeauna sunt cu culori tranșante, nu merg cu culori diluate”. Adică, cine a avut cap de înțeles, a înțeles. „Merg cu o parte sau cu alta, nu stau în expectativă. În culori pastel.” Iată, în culori pastel. Și lucrurile așa s-au întâmplat, dar pe urmă, momentul de glorie recunoscută unanim în spațiul românesc, momentul de glorie al reginei Maria, să știți că se consumă în timpul războiului. Pentru că această femeie înrudită cu toate casele, cum observați și dumneavoastră, nu? Cu toate casele regale de pe continent, ar fi putut să plece oricând din țară, să stea la adăpost, să vadă ce se întâmplă și vedea ce face la sfârșitul războiului. N-a acceptat lucrul acesta și s-a implicat. Și s-a implicat într-o formă admirabilă.\n\nCu permisiunea dumneavoastră să citesc cuvintele ei, atunci, ca foarte de departe, veniră cuvintele aceleași cuvinte: „Dumnezeu să te apere și să te țină ca să ajungi împărăteasă, împărăteasă a tuturor românilor. Mi s-a părut în această clipă că ceva minunat coboruse deodată în inima mea zdrobită, ceva sfânt și grozav, ceva care era mai mult decât puteam îndura.” Este ceea ce îi strigau oamenii, pentru că ea a fost foarte activă în spitalele de campanie. Doamnă, n-au fost numai oamenii, așa, românii, povestea asta că să devină împărătiță, știți cine a mai intervenit, dacă se poate spune astfel?\n\nDumneavoastră știți că noi am trecut de partea Antantei și asta a însemnat colaborare și cu Rusia. Doar că rușii înșiși treceau printr-un moment cumplit și anume Imperiul Țarist să dizolve. Armata lor să dizolva și această poveste, această bolșevizare ce însemna? Lipsă de disciplină, nu-și mai ascultau șefii și în genere o țară necondusă cu mână de fier e o țară primejdioasă pentru toată lumea, dar o armată este odată în plus un factor de pericol. Ori în momentul când acești soldați bolșevizați care nu mai ascultau de comandanții lor, ba chiar erau dispuși să le mai sucească gâtul, când au văzut-o la Iași pe Regina Maria, care avea o ținută care îți impunea numai când o zăreai de la distanță, au spus: „dar vrem să fim părătița noastră!” Gândind ca orice popor din ăsta paternalist care are nevoie de un tătuc că femeia asta le va da tot ce începuse să lipsească în spațiul rusesc, știți? Lucrul trebuie să ne dea puțin de gândit, pentru că e marea întrebare dacă se va mai naște vreodată o femeie de calibrul reginei Maria care să fie făcută româncă, nu născută, cum e cazul ei, dacă va avea aceeași influență, aceeași împriză asupra spațiului românesc, asupra românilor în genere. Foarte greu de crezut.\n\nDoamna Georgeta Filiti: ne amintim și de faptul că ea a plătit un tribut foarte greu, cel mai mic dintre copiii ei, Mircea. A murit de febră tifoidă și ea nu a stat lângă el. A stat lângă el, dar nu l-au îngropat la Cotroceni și ea scrie și în povestea vieții mele și în jurnal că îl lasă singur acolo pentru că ei au trebuit să se refugieze. Copilașul a murit la Buftea și pe urmă a fost îngropat la Cotroceni și acum în urmă, în urmă, cu mult timp în urmă, a fost dus la Bran. Asta a fost o durere foarte bine observată dumneavoastră a ei ca mamă, pentru că putea să fie suverană, putea să fie factor de decizie, dar era și mamă. Era și mamă, era și regină. Spune așa: „copilul meu moare, chemarea lui mă urmărește, dar paturile sunt atât de multe, atât de multe. Voi putea ajunge vreodată până la cel din urmă? Ce își zic ei oare când se apleacă să-mi sărute mâna?” A continuat să facă vizite la spital cu copilul bolnav, a continuat să încurajeze soldații. Numai atâta, dar dumneavoastră gândiți-vă, așa cum vă spuneam, ea ar fi putut să plece din țară și să-și petreacă un exil aurit cine știe unde. Nu. A preferat să rămână, dispoziția a fost refugiu în Moldova, dar în Moldova, dacă vreți, ea a organizat rezistența.\n\nCum? A creat toate aceste spitale sau a participat majoritar la organizarea lor, a trimis sute de scrisori în străinătate: „ajutați-ne, ajutați-ne, ajutați-ne”. Să nu uităm că până la răsturnarea țarului, până la abdicarea și asasinarea țarului Nicolae al II‑lea, totuși Rusia, cum observați și dumneavoastră, originea ei o lega foarte mult de această țară și așa se face că cei de acolo, Crucea Roșie, a trimis masiv ajutoare sanitare, adică trenuri întregi cu produse necesare salvării răniților. Însă trebuie să ne mai gândim că atât Regina Maria cât toți participanții la război s-au aflat de la o zi la alta în fața unor realități cumplite care erau parabelice, aș zice, în sensul că a fost vorba de gripa spaniolă și de tifosul exantematic. Să știți că astea sunt bolile care au ucis mai mult români decât confruntarea de pe front. Și nu numai români, asta a fost în lumea întreagă, nici astăzi nu este cunoscută exact cifra celor morți astfel. Prin urmare, Regina nu era numai obligată să urmărească ce se întâmplă pe front, nici nu putea prea mult, ci să vadă ce-i de făcut și cu cei din spatele frontului.\n\nTrebuie să vă spun de pildă că au rămas de la o zi la alta — termenul e puțin nepotrivit, de fapt — 340.000 de orfani. Vă dați seama că ăștia erau niște copii care nu puteai să-i lași acolo, „lasă că văd eu peste 2-3 luni”. Trebuia să-i văd de ei în câteva ceasuri. Cum îi adăpostesc, cum îi hrănesc, cum îi spăl, cum să-l amuresc. Că erau copii de 3-4 ani care știau că îl cheamă Nae. Și era o făptură care îi zicea mama și una care îi zicea tata. Ori, toată această situație îngrozitoare trebuia cineva să-i facă față, în condiții în care noi am pornit foarte încrezători. Pe 16 august 1916 regele Ferdinand le-a ordonat soldaților să treacă Carpații. Și în momentul acesta de părelnică glorie de la începutul războiului a trecut foarte repede. În trei luni de zile am dat înapoi. Parte din teritoriul nostru a fost ocupat. Autoritățile, inclusiv Regina, au trebuit să se refugieze la Iași și de acolo să organizeze această rezistență.\n\nAdică, organizarea în primul rând unui teritoriu care avea un număr de populație înzecit acum. Aprovizionează, vindecă, susține, susține moral, susține material, înțelege, transmite mesaje în toate părțile: „ajutați-ne, faceți ceva cu noi”. Inclusiv partea organizatorică. Ea înființează organizația Regina Maria, o rețea de spitale în Moldova, serviciul de ambulanță. Exact, sunt faimoasele ambulanțe Maria. Pentru că aici au contribuit foarte mult și americanii și ai noștrii; între ei e vorba de familia Crisovelloni, care au avut o contribuție esențială. Dumneavoastră să spuneți că erau bogați. Să știți că nu toți oamenii bogați sunt și darnici. Ba, aș zice, cu cât ești mai bogat, cu atât devii mai strângător, mai zgârcit, mai meschin. Și lucrurile sunt și astăzi. E în firea oamenilor, e în firea oamenilor.\n\nRegina și prin exemplul ei, vedeți, una e să te duci în spitale cu șapte mănuși și cu șapte măști pe față și să te uiți de la distanță la niște suferinzi și alta e să vii cu mâinile goale ca ei să-ți poată săruta acea mână, să stai minute întregi să-i citești, să vorbești, să-l confortezi, să-i dai niște bomboane, să-i dai niște gări, să-i dai o cruciuliță, să stai lângă el. Și omul acela se simte bine. Și să știți că eu am avut șansa la Bran, într-o împrejurare de familie care nu îi interesează, să-mi petrec ani de zile vacanțele acolo și eu am cunoscut persoane care au fost în serviciul reginei Maria și apoi a principesei Ileana. Și, de pildă, regina Maria intra într-o casă și vedea o icoană splendidă. Îi plăcea peste măsură. Și stăpânul casei se cam simțea dator să o coboare din cui și să i-o ofere. Și sigur că dacă te oprești, zici: „uite-te ce lacomă era regina asta. A văzut un lucru frumos și l-a înhățat.” Dar să știți că a avut și o urmare. A doua zi, ăla a primit o sumă de bani, că și-a cumpărat o casă. Și lucruri de genul ăsta, evident că în timpul războiului nu se întâmplau de ceva asemănător, dar faptul că ea se ducea până în creierul munților, încărcată cu bunătăți, ca să facă un picur de bine, cu tărei băbuțe uitate pe o prispă de casă dărăpănată și stătea zece minute cu ea și fumau amândouă — cât vorbea regina românește, cât înțelegea băbuța ce-i spunea regina — fumatul ăsta în două, acelor două femei, să știți că pe băbuța singuratică o marca pe toată viața. Adică acest suport moral rămâne extraordinar pentru ceea ce a făcut regina Maria, care nu s-a lăsat. Și ea tot timpul spunea: „rezistăm, rezistăm, rezistăm.”\n\nNiciodată nu se va ști, că astea nu se pot cuantifica, în ce măsură noi am avut un moment când puterile centrale păreau a câștiga. Și în aprilie 1918 ar fi trebuit să-i scălim cu ei un tratat înrobitor prin care pierdeam, pierdeam, pierdeam. Erau unele bunuri ale noastre, petrol, grâu, toată producția ar fi mers pe 99 de ani în Germania. Și e greu de spus cât a făcut regina, cât a participat regina, cât a insistat regina să nu îi scălim. Pentru că acest tratat, atâta vreme cât nu era iscălit de rege, nu avea valabilitate. Și regele nu l-a iscălit. Și așa ajungem, că timpul zboară la momentul extraordinar al conferinței de pace de la Paris, când prim-ministrul român Ionice Brătianu se duce să negocieze în numele României, și nu se descurcă.\n\nAici să știți, poate că multă lume, auzindu-ne, nu o să fie de acord cu mine. Dar dacă are răbdare, o să vadă că așa este. Ăsta a fost unul din marile noroace ale noastre, fiindcă noi suntem un popor teribil de norocos. Suntem pe marginea prăpastiei și ceva intervine. Dumnezeu i-a luminat atunci pe Ionel Brătianu și pe ceilalți să trimită la Paris pe cineva care n-avea o funcție oficială. Nu era diplomat, nu era ministru, ba mai rău, era și femeie. Femeile și-au căpătat drepturi încet, încet, încet, încet. Poate odată o să facem o emisiune despre femeile în politica românească, fiindcă le pot surprinde încă din epoca fanariotă. Uite, e extraordinară, să știți. Păi, dar știți ce s-a întâmplat? Discuțiile se purtau în alcov, se purtau neoficial. Ori, încet, încet, ele își capătă acest drept în spațiu românesc în așa fel încât regina, care deja se bucura de o faimă în Europa și când se măritase cu prințul Ferdinand era socotită cea mai frumoasă, cea mai grațioasă din Europa. Acum ea este trimisă la Paris. Și poate pentru persoane superficiale e doar asta. Cu asta este foarte important pentru că neoficial Maria venise la Paris. Dar puțină lume știe cât a stat acolo; în fiecare zi, la ora 9 veneau diplomații noștri în frunte cu Nicolae Mișu și îi explicau ce trebuie să vorbească cu cei mari din Consiliul Suprem, adică factorii de decizie pentru terminarea războiului. Și ca o școlăriță conștiincioasă regina Maria învăța: „uite, ți se pune întrebarea cu tare. Aici vei fi combătută. Vezi ce spui. Spui asta, asta, asta, asta.” Și să știți că i-a trebuit foarte puțin ca să se impună în fața cui? În fața lui Clem Ansuc, care ca foarte mulți bărbați din vremea aceea, bărbați care se exprimau, nu de ăștia care tăceau acasă, nu-i știa nimeni, care considerau că femeile trebuie să rămână drăguțe, grațioase, parte din ele la cratiță, parte din ele în saloane și atâta tot. Ori, dacă vreți, o exprimare sau urmare a acestui respect a fost și felul cum a fost primită. Primită cu imnul țării care nu se cânta decât la suveran. Suveranul era Ferdinand. Era acasă. A stat de vorbă cu toate mărimile acestea și hotărârile care s-au luat au fost foarte mult influențate de această pledoarie, de această ținută a reginei și să nu îi uităm și pe filoromânii de acolo, care au fost mulți.\n\nAceastă dragoste a multor străini pentru România, să știți, că se datorează și atitudinii reginei și a reginei Elizabeta, care tocmai murise în 1916, și a foarte multor români trăitori la Paris, la Londra, la Roma. Mi-aduc aminte, doamnă Georgeta Filiti, din Jurnalul Mariei. Sunt pagini extraordinare. Sunt unele dintre cele mai frumoase pagini de literatură documentară. „Cum merge cu trenul”, am citat-o la mine, „cum merge cu trenul peste pământuri” și se întreabă în ce țară vor ajunge pământurile astea. Pentru a ajunge la Paris și la Paris se uită în jurul mesei și știe pe toți. Unii este și rudă. Și vede toți acești oameni care nu știu nimic despre România și care tratează România ca pe un accesoriu, ceva la marginea hărții. Să știți că explicația este și cineva. Unii ascultători o să sară în sus, dar realitatea asta este. Noi avem multe calități și avem mult noroc, dar avem și multe lipsuri și printre lipsurile statornice ale spațiului românesc este lipsa de propagandă inteligentă. Pentru că noi să o cotim că e suficient ca la un târg de carte alături să punem mititei și un taraf de la Clejani, care să-mi cânte cât mai tare și cu asta am făcut propagandă. Nu. Ori lipsa noastră de propagandă la primul război mondial, să știți, că a fost unul din factorii îngrozitori în felul cum am fost priviți. Propaganda oponenților noștri de la Apus a fost mult mai bine articulată. Vă vine să credeți ca să ne demonstrăm solicitarea într-o totul justificată a Transilvaniei. Noi am folosit material documentar al lor, nu al nostru. Că noi nu eram în stare să-l închegăm ca lumea. Că ăla s-a pierdut, că ăla n-a venit, că ăla a întârziat și chestia asta, dacă vreți, este quasi‑generală în istoria noastră până astăzi. Ne permitem în străinătate să ne reprezinte, aș zice, oameni nereprezentativi. Nereprezentativi, ca să nu spun mai mult. Oameni care nu știu o limbă străină. Ori de data asta aveam pe cineva foarte reprezentativ și iată, se încheie emisiunea noastră odată cu fericită încheiere a conferinței de pace de la Paris când România devine mai mare ca niciodată. Devine mai mare și urmează Trianonul, care este un adevărat triumf. Un adevărat triumf al politicii noastre și o împlinire pentru această Românie dodoloață.\n\nVă mulțumesc foarte mult, doamna Giorgeta Filiti.\n\nȘi eu vă mulțumesc, doamnă. O săptămână în memoria reginei Maria, 150 de ani de la nașterea sa, o personalitate atât de specială încât merită să citiți mai departe. Cu această emisiune a noastră ea a sfârșit. Rămâneți pe frecvențele Radio România Cultural. Suntem astele. Numai bine vă doresc!",
+          "refusal": null,
+          "annotations": []
+        },
+        "finish_reason": "stop"
+      }
+    ]
+  },
   "meta": {
     "instanceId": "206adf6655ba61d819856ed7ca9125a8e9b0a533b7fbb1ed0b047dc4ade2df87"
   }
