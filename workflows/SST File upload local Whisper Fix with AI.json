@@ -107,38 +107,6 @@
     },
     {
       "parameters": {
-        "modelId": {
-          "__rl": true,
-          "value": "gpt-5-mini",
-          "mode": "list",
-          "cachedResultName": "GPT-5-MINI"
-        },
-        "messages": {
-          "values": [
-            {
-              "content": "=You are a text correction assistant. You will receive transcribed text from a video or audio. Your task is to:\n1. Correct spelling and grammar errors\n2. Fix punctuation\n3. Improve readability while preserving the original meaning\n4. Maintain the original language\n\nProvide only the corrected text without any additional explanations or commentary.\n\nTranscribed text to correct:\n{{ $json.transcription }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "8927e499-1644-4aee-b0c7-9e5e97b43b66",
-      "name": "Message a model",
-      "position": [
-        656,
-        128
-      ],
-      "type": "@n8n/n8n-nodes-langchain.openAi",
-      "typeVersion": 1.8,
-      "credentials": {
-        "openAiApi": {
-          "id": "FNZYVJ9gntu30ITG",
-          "name": "OpenAi account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "operation": "toText",
         "sourceProperty": "message.content",
         "options": {
@@ -179,6 +147,38 @@
       "id": "4dcccfa2-8a0f-46f2-8242-5e502afd584f",
       "name": "On form submission",
       "webhookId": "7b87f77e-1eec-4be6-bb57-36438a78c812"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a professional text correction assistant specialized in post-transcription editing.\n\nIMPORTANT RULES:\n- You MUST preserve ALL content from the original text - do NOT remove, skip, or summarize any parts\n- Even if text seems unclear or repetitive, keep it and correct it\n- Maintain the complete length and structure of the original transcription\n- If you're unsure about a word, keep the original version\n\nYour tasks:\n1. Correct spelling and grammar errors\n2. Fix punctuation and capitalization\n3. Improve readability while preserving the EXACT original meaning\n4. Maintain the original language (detect and use the same language as input)\n5. Format text into proper paragraphs where natural pauses occur\n6. Keep ALL filler words and hesitations (like \"um\", \"uh\", \"well\") - just correct their spelling\n\nOUTPUT FORMAT:\n- Return ONLY the corrected text\n- No explanations, comments, or meta-information\n- No truncation or summarization\n- The output should be approximately the same length as the input\n\nTranscribed text to correct:\n{{ $json.transcription }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8927e499-1644-4aee-b0c7-9e5e97b43b66",
+      "name": "Correct with AI",
+      "position": [
+        656,
+        128
+      ],
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "credentials": {
+        "openAiApi": {
+          "id": "FNZYVJ9gntu30ITG",
+          "name": "OpenAi account"
+        }
+      }
     }
   ],
   "connections": {
@@ -203,7 +203,7 @@
           },
           {
             "index": 0,
-            "node": "Message a model",
+            "node": "Correct with AI",
             "type": "main"
           }
         ]
@@ -215,17 +215,6 @@
           {
             "index": 0,
             "node": "Read/Write Files from Disk",
-            "type": "main"
-          }
-        ]
-      ]
-    },
-    "Message a model": {
-      "main": [
-        [
-          {
-            "index": 0,
-            "node": "Convert AI Response to File",
             "type": "main"
           }
         ]
@@ -249,6 +238,17 @@
             "node": "Transcribe with Whisper",
             "type": "main",
             "index": 0
+          }
+        ]
+      ]
+    },
+    "Correct with AI": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Convert AI Response to File",
+            "type": "main"
           }
         ]
       ]
