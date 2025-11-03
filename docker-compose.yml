@@ -6,19 +6,19 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=false
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
-    ports:
-      - "9200:9200"
     volumes:
       - esdata:/usr/share/elasticsearch/data
+    profiles:
+      - full
 
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
     restart: unless-stopped
-    ports:
-      - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    profiles:
+      - full
 
   ytdlp:
     build:
@@ -26,13 +26,14 @@ services:
       dockerfile: Dockerfile
     container_name: ytdlp
     restart: unless-stopped
-    ports:
-      - "8081:8081"
     environment:
       - PYTHONUNBUFFERED=1
     volumes:
       - ytdlp_downloads:/downloads
       - ytdlp_cache:/root/.cache
+    profiles:
+      - basic
+      - full
 
   labse:
     build:
@@ -40,12 +41,12 @@ services:
       dockerfile: Dockerfile
     container_name: labse
     restart: unless-stopped
-    ports:
-      - "8080:8080"
     environment:
       - PYTHONUNBUFFERED=1
     volumes:
       - labse_cache:/root/.cache
+    profiles:
+      - full
 
   whisper:
     build:
@@ -53,13 +54,14 @@ services:
       dockerfile: Dockerfile
     container_name: whisper
     restart: unless-stopped
-    ports:
-      - "8082:8082"
     environment:
       - PYTHONUNBUFFERED=1
     volumes:
       - whisper_cache:/root/.cache
       - whisper_models:/root/.cache/whisper
+    profiles:
+      - basic
+      - full
 
   n8n:
     build:
@@ -83,9 +85,9 @@ services:
     volumes:
       - n8n_data:/home/node/.n8n
       - ytdlp_downloads:/downloads:ro
-    depends_on:
-      - elasticsearch
-      - ollama
+    profiles:
+      - basic
+      - full
 
 volumes:
   esdata:
