@@ -23,11 +23,11 @@
           "timeout": 7200000
         }
       },
-      "id": "1b6806de-d210-4752-a782-de23e1c8d50d",
+      "id": "b8a12d81-b563-4f6f-8833-319a94a9a2ae",
       "name": "Transcribe with Whisper",
       "position": [
-        208,
-        32
+        -448,
+        256
       ],
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2
@@ -64,11 +64,11 @@
         },
         "options": {}
       },
-      "id": "5e26ad4c-fb95-4842-a5ce-8bb04efcba46",
+      "id": "d23c670f-b283-4f19-bba9-140f7c4d71c5",
       "name": "Format Transcription Result",
       "position": [
-        432,
-        32
+        -96,
+        256
       ],
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4
@@ -81,11 +81,11 @@
           "fileName": "={{ $json.video_title }}.txt"
         }
       },
-      "id": "9e54ab4b-84d8-45bf-bbd6-4fa9ea3fe35b",
+      "id": "f30d9083-5a4f-43af-b40d-ec0ddb59f15a",
       "name": "Convert to File",
       "position": [
-        1360,
-        -64
+        192,
+        256
       ],
       "type": "n8n-nodes-base.convertToFile",
       "typeVersion": 1.1
@@ -96,11 +96,11 @@
         "fileName": "={{ $binary.data.fileName }}",
         "options": {}
       },
-      "id": "27a6372f-5296-4b75-ac44-7cb835069120",
+      "id": "cb379f3b-728f-4513-8c89-652c08457731",
       "name": "Read/Write Files from Disk",
       "position": [
-        1584,
-        32
+        416,
+        352
       ],
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1
@@ -124,10 +124,10 @@
       "type": "n8n-nodes-base.formTrigger",
       "typeVersion": 2.3,
       "position": [
-        -16,
-        32
+        -736,
+        256
       ],
-      "id": "4dcccfa2-8a0f-46f2-8242-5e502afd584f",
+      "id": "9822b405-3e4d-44d5-9303-8a142f3e0051",
       "name": "On form submission",
       "webhookId": "7b87f77e-1eec-4be6-bb57-36438a78c812"
     },
@@ -148,11 +148,11 @@
         },
         "options": {}
       },
-      "id": "8927e499-1644-4aee-b0c7-9e5e97b43b66",
+      "id": "c6458aea-e4f6-44f8-af74-72dc26bd7e8a",
       "name": "Correct with AI",
       "position": [
-        656,
-        128
+        -512,
+        448
       ],
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
@@ -180,11 +180,11 @@
         },
         "options": {}
       },
-      "id": "b680fb08-ca10-4019-b974-d8702933e38d",
+      "id": "ec0b3cba-ae40-4820-b48a-19ced3ce8d49",
       "name": "Translate with AI",
       "position": [
-        1008,
-        128
+        -160,
+        448
       ],
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
@@ -203,11 +203,11 @@
           "fileName": "={{ $('Format Transcription Result').first().json.video_title }}_fixed_by_ai.md"
         }
       },
-      "id": "edf6abe7-d7e2-45c4-87aa-f2f92fef534d",
+      "id": "9b3a18fc-647b-43f2-8051-60c12ea4f301",
       "name": "Convert to md",
       "position": [
-        1360,
-        128
+        192,
+        448
       ],
       "type": "n8n-nodes-base.convertToFile",
       "typeVersion": 1.1
@@ -218,9 +218,9 @@
       "main": [
         [
           {
-            "index": 0,
             "node": "Format Transcription Result",
-            "type": "main"
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -229,9 +229,9 @@
       "main": [
         [
           {
-            "index": 0,
             "node": "Convert to File",
-            "type": "main"
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -240,9 +240,9 @@
       "main": [
         [
           {
-            "index": 0,
             "node": "Read/Write Files from Disk",
-            "type": "main"
+            "type": "main",
+            "index": 0
           }
         ]
       ]
