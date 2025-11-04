@@ -1,0 +1,256 @@
+{
+    "nodes": [
+      {
+        "parameters": {
+          "operation": "toText",
+          "sourceProperty": "=transcription",
+          "options": {
+            "fileName": "={{ $('On form submission').first().binary.file.fileName.replace(/\\.[^/.]+$/, '').replace(/[^a-zA-Zа-яА-ЯёЁ0-9\\s_-]/g, '').replace(/\\s+/g, '_').trim() }}.txt"
+          }
+        },
+        "id": "ea1fa5d1-1fa9-4973-abc8-0ff7126708ba",
+        "name": "Convert to File",
+        "position": [
+          1216,
+          32
+        ],
+        "type": "n8n-nodes-base.convertToFile",
+        "typeVersion": 1.1
+      },
+      {
+        "parameters": {
+          "operation": "write",
+          "fileName": "={{ $binary.data.fileName }}",
+          "options": {}
+        },
+        "id": "a2b8f0a8-22fd-4942-a8d4-aab4e1873f35",
+        "name": "Read/Write Files from Disk",
+        "position": [
+          1456,
+          32
+        ],
+        "type": "n8n-nodes-base.readWriteFile",
+        "typeVersion": 1
+      },
+      {
+        "parameters": {
+          "formTitle": "Upload mp3 file",
+          "formFields": {
+            "values": [
+              {
+                "fieldLabel": "file",
+                "fieldType": "file",
+                "multipleFiles": false,
+                "acceptFileTypes": ".mp3",
+                "requiredField": true
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.formTrigger",
+        "typeVersion": 2.3,
+        "position": [
+          -112,
+          32
+        ],
+        "id": "a7cdb701-9e72-4428-a91f-54b552e309cb",
+        "name": "On form submission",
+        "webhookId": "a899f855-63bf-4b37-ad9b-dc614bd0985b"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.openai.com/v1/audio/transcriptions",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "openAiApi",
+          "sendBody": true,
+          "contentType": "multipart-form-data",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "parameterType": "formBinaryData",
+                "name": "file",
+                "inputDataFieldName": "data"
+              },
+              {
+                "name": "model",
+                "value": "gpt-4o-mini-transcribe"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          784,
+          32
+        ],
+        "id": "f4aeb7ee-4b74-460d-8f13-91ff253a39a3",
+        "name": "Open AI Transcribe",
+        "credentials": {
+          "openAiApi": {
+            "id": "FNZYVJ9gntu30ITG",
+            "name": "OpenAi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://splitter:8083/split",
+          "sendBody": true,
+          "contentType": "multipart-form-data",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "parameterType": "formBinaryData",
+                "name": "file",
+                "inputDataFieldName": "file"
+              },
+              {
+                "name": "chunk_ms",
+                "value": "540000"
+              },
+              {
+                "name": "output_format",
+                "value": "mp3"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "66e90c87-db9f-4aa9-8d35-88ba5bf7cba0",
+        "name": "Split Audio",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          112,
+          32
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const items = $input.all();\nconst result = [];\n\nfor (const item of items) {\n  if (item.json.chunks && Array.isArray(item.json.chunks)) {\n    for (const chunk of item.json.chunks) {\n      result.push({ json: chunk });\n    }\n  }\n}\n\nreturn result;"
+        },
+        "id": "extract-chunks-array",
+        "name": "Extract Chunks Array",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          336,
+          32
+        ]
+      },
+      {
+        "parameters": {
+          "filePath": "={{ $json.path }}"
+        },
+        "id": "read-chunk-file",
+        "name": "Read Chunk File",
+        "type": "n8n-nodes-base.readBinaryFile",
+        "typeVersion": 1,
+        "position": [
+          560,
+          32
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "// Получаем все элементы из предыдущей ноды\nconst items = $input.all();\n\n// Собираем все тексты в один\nconst mergedText = items\n  .map(item => item.json.text || '')\n  .filter(text => text.trim().length > 0)\n  .join(' ');\n\n// Возвращаем один элемент с объединенным текстом\nreturn [{\n  json: {\n    transcription: mergedText\n  }\n}];"
+        },
+        "id": "merge-transcriptions",
+        "name": "Merge Transcriptions",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1008,
+          32
+        ]
+      }
+    ],
+    "connections": {
+      "Convert to File": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Read/Write Files from Disk",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "On form submission": {
+        "main": [
+          [
+            {
+              "node": "Split Audio",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Open AI Transcribe": {
+        "main": [
+          [
+            {
+              "node": "Merge Transcriptions",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Split Audio": {
+        "main": [
+          [
+            {
+              "node": "Extract Chunks Array",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Extract Chunks Array": {
+        "main": [
+          [
+            {
+              "node": "Read Chunk File",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Read Chunk File": {
+        "main": [
+          [
+            {
+              "node": "Open AI Transcribe",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Merge Transcriptions": {
+        "main": [
+          [
+            {
+              "node": "Convert to File",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "meta": {
+      "instanceId": "206adf6655ba61d819856ed7ca9125a8e9b0a533b7fbb1ed0b047dc4ade2df87"
+    }
+  }
