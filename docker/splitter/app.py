@@ -1,10 +1,14 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydub import AudioSegment
-from typing import List, Optional
-import base64
+from typing import List
+from datetime import datetime
+from pathlib import Path
 import io
 import logging
+import os
+import re
+import uuid
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -24,6 +28,34 @@ app.add_middleware(
 )
 
 SUPPORTED_EXT = {"mp3", "wav", "m4a", "ogg", "flac", "webm", "mp4", "aac"}
+
+# Configure output directories via environment for docker-compose flexibility.
+OUTPUT_ROOT = Path(os.environ.get("SPLITTER_OUTPUT_ROOT", "/shared/splitter")).expanduser()
+PUBLIC_ROOT = Path(os.environ.get("SPLITTER_PUBLIC_ROOT", str(OUTPUT_ROOT))).expanduser()
+
+# Lazily create the root directory so container start doesn't fail if volume missing.
+try:
+    OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
+except Exception as exc:  # pragma: no cover - protects startup when volume misconfigured
+    logger.error("Unable to create output root %s: %s", OUTPUT_ROOT, exc)
+    raise
+
+SAFE_FILENAME_RE = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+def _slugify(stem: str) -> str:
+    cleaned = SAFE_FILENAME_RE.sub("_", stem).strip("._")
+    return cleaned or "audio"
+
+
+def allocate_output_directory(original_filename: str) -> tuple[Path, Path, str]:
+    """Create a unique directory for the request and return (absolute, relative, stem)."""
+    stem = _slugify(Path(original_filename).stem or "audio")
+    now = datetime.utcnow()
+    relative_dir = Path(now.strftime("%Y/%m/%d")) / f"{stem}_{now.strftime('%H%M%S')}_{uuid.uuid4().hex[:8]}"
+    target_dir = OUTPUT_ROOT / relative_dir
+    target_dir.mkdir(parents=True, exist_ok=True)
+    return target_dir, relative_dir, stem
 
 
 def export_segment_to_bytes(segment: AudioSegment, fmt: str) -> bytes:
@@ -59,6 +91,10 @@ async def split_audio(
     if ext and ext not in SUPPORTED_EXT:
         raise HTTPException(status_code=400, detail=f"Unsupported file extension: {ext}")
 
+    output_format = output_format.strip().lower()
+    if output_format not in SUPPORTED_EXT:
+        raise HTTPException(status_code=400, detail=f"Unsupported output format: {output_format}")
+
     try:
         # Read into memory
         data = await file.read()
@@ -69,6 +105,9 @@ async def split_audio(
         audio = AudioSegment.from_file(io.BytesIO(data))
         duration_ms = len(audio)
 
+        request_dir, relative_dir, stem = allocate_output_directory(filename)
+        logger.info("Writing %s chunks to %s", filename, request_dir)
+
         chunks: List[dict] = []
         start = 0
         index = 0
@@ -77,13 +116,26 @@ async def split_audio(
             end = min(start + chunk_ms, duration_ms)
             segment = audio[start:end]
             raw = export_segment_to_bytes(segment, output_format)
-            b64 = base64.b64encode(raw).decode("ascii")
+            chunk_name = f"{stem}_chunk_{index:03d}.{output_format}"
+            chunk_path = request_dir / chunk_name
+            try:
+                with chunk_path.open("wb") as fh:
+                    fh.write(raw)
+            except Exception as exc:
+                logger.exception("Failed writing chunk %s", chunk_path)
+                raise HTTPException(status_code=500, detail=f"Failed to write chunk: {exc}")
+
+            relative_chunk = relative_dir / chunk_name
+            public_path = (PUBLIC_ROOT / relative_chunk).as_posix()
+
             chunks.append({
                 "index": index,
                 "start_ms": start,
                 "end_ms": end,
                 "format": output_format,
-                "content_base64": b64,
+                "path": public_path,
+                "filename": chunk_name,
+                "size_bytes": len(raw),
             })
             index += 1
             if end >= duration_ms:
@@ -95,6 +147,7 @@ async def split_audio(
             "duration_ms": duration_ms,
             "chunk_ms": chunk_ms,
             "count": len(chunks),
+            "output_directory": (PUBLIC_ROOT / relative_dir).as_posix(),
             "chunks": chunks,
         }
     except HTTPException:

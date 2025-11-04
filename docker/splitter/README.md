@@ -1,6 +1,6 @@
 # Audio Splitter Service
 
-Simple FastAPI service that accepts an audio file, splits it into chunks (no overlap), and returns base64-encoded parts with timestamps. Useful for preparing longer inputs for speech-to-text APIs limited by file size/duration.
+Simple FastAPI service that accepts an audio file, splits it into chunks (no overlap), and writes the pieces to disk. The API responds with filesystem paths (instead of base64 payloads) so that downstream services such as n8n can read the generated files directly from a shared volume.
 
 Note: v2.0.0 removes the `overlap_ms` parameter and field from the API.
 
@@ -20,17 +20,22 @@ Response JSON:
   "duration_ms": 123456,
   "chunk_ms": 540000,
   "count": 3,
+  "output_directory": "/shared/splitter/input_20240918T104455_ab12cd34",
   "chunks": [
     {
       "index": 0,
       "start_ms": 0,
       "end_ms": 540000,
       "format": "mp3",
-      "content_base64": "..."
+      "filename": "input_chunk_000.mp3",
+      "path": "/shared/splitter/input_20240918T104455_ab12cd34/input_chunk_000.mp3",
+      "size_bytes": 1234567
     }
   ]
 }
 ```
+
+All files are created beneath the directory defined by the `SPLITTER_OUTPUT_ROOT` environment variable (defaults to `/shared/splitter`). Every request gets its own dated subdirectory to avoid name collisions and keep related chunks together.
 
 ## Docker
 
@@ -52,6 +57,10 @@ curl -X POST \
 ```
 
 This image includes ffmpeg for broad codec support via pydub.
+
+### Sharing files with n8n
+
+When running via `docker-compose`, mount a shared named volume into both the `splitter` and `n8n` services. The splitter writes chunks to `/shared/splitter`, while n8n mounts the same volume (read-only) at `/shared` to consume the generated files. Adjust `SPLITTER_PUBLIC_ROOT` if n8n needs to use a different mount point in its container.
 
 
 

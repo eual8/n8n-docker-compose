@@ -65,6 +65,10 @@ services:
     restart: unless-stopped
     environment:
       - PYTHONUNBUFFERED=1
+      - SPLITTER_OUTPUT_ROOT=/shared/splitter
+      - SPLITTER_PUBLIC_ROOT=/shared/splitter
+    volumes:
+      - splitter_output:/shared
 
   n8n:
     build:
@@ -88,6 +92,7 @@ services:
     volumes:
       - n8n_data:/home/node/.n8n
       - ytdlp_downloads:/downloads:ro
+      - splitter_output:/shared:ro
 
 volumes:
   esdata:
@@ -98,3 +103,4 @@ volumes:
   ytdlp_cache:
   whisper_cache:
   whisper_models:
+  splitter_output:
