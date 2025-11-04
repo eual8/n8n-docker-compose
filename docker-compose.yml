@@ -57,6 +57,15 @@ services:
       - whisper_cache:/root/.cache
       - whisper_models:/root/.cache/whisper
 
+  splitter:
+    build:
+      context: ./docker/splitter
+      dockerfile: Dockerfile
+    container_name: splitter
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+
   n8n:
     build:
       context: ./docker/n8n
