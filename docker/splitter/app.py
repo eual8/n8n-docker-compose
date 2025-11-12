@@ -79,12 +79,17 @@ async def health():
 @app.post("/split")
 async def split_audio(
     file: UploadFile = File(..., description="Audio file to split"),
-    chunk_ms: int = Form(540_000, description="Chunk size in milliseconds (default 9 minutes)"),
+    chunk_ms: int = Form(360_000, description="Chunk size in milliseconds (default 6 minutes)"),
+    overlap_ms: int = Form(5_000, description="Overlap between chunks in milliseconds"),
     output_format: str = Form("mp3", description="Output format for chunks: mp3|wav|ogg|flac|m4a"),
 ):
     # Validate
     if chunk_ms <= 0:
         raise HTTPException(status_code=400, detail="chunk_ms must be > 0")
+    if overlap_ms < 0:
+        raise HTTPException(status_code=400, detail="overlap_ms must be >= 0")
+    if overlap_ms >= chunk_ms:
+        raise HTTPException(status_code=400, detail="overlap_ms must be smaller than chunk_ms")
 
     filename = file.filename or "audio"
     ext = (filename.rsplit(".", 1)[-1].lower() if "." in filename else "").strip()
@@ -111,7 +116,7 @@ async def split_audio(
         chunks: List[dict] = []
         start = 0
         index = 0
-        # Sliding window without overlap
+        # Sliding window with configurable overlap
         while start < duration_ms:
             end = min(start + chunk_ms, duration_ms)
             segment = audio[start:end]
@@ -140,12 +145,14 @@ async def split_audio(
             index += 1
             if end >= duration_ms:
                 break
-            start = end
+            # Следующий фрагмент начинается с учетом пересечения
+            start = end - overlap_ms
 
         return {
             "filename": filename,
             "duration_ms": duration_ms,
             "chunk_ms": chunk_ms,
+            "overlap_ms": overlap_ms,
             "count": len(chunks),
             "output_directory": (PUBLIC_ROOT / relative_dir).as_posix(),
             "chunks": chunks,
