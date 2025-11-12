@@ -56,6 +56,8 @@ services:
     volumes:
       - whisper_cache:/root/.cache
       - whisper_models:/root/.cache/whisper
+    profiles:
+      - full
 
   splitter:
     build:
